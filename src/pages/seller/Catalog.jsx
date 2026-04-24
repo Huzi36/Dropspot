@@ -5,8 +5,11 @@ import { supabase } from '../../supabase'
 
 const NAV = [
     { icon: '⚡', label: 'Dashboard', path: '/seller/dashboard' },
-    { icon: '🛍️', label: 'Catalog', path: '/seller/catalog' },
-    { icon: '📦', label: 'Orders', path: '/seller/orders' },
+    { icon: '👤', label: 'Account Details', path: '/seller/account' },
+    { icon: '🔗', label: 'Linked Stores', path: '/seller/stores' },
+    { icon: '📤', label: 'Exported Products', path: '/seller/catalog' },
+    { icon: '📥', label: 'Imported Orders', path: '/seller/orders' },
+    { icon: '🚚', label: 'Shipments', path: '/seller/shipments' },
 ]
 
 export default function SellerCatalog() {
@@ -111,7 +114,7 @@ export default function SellerCatalog() {
                 <nav className="flex-1 p-4 space-y-1">
                     {NAV.map(item => (
                         <Link key={item.path} to={item.path}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${item.path === '/seller/catalog' ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+                            className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${item.path === '/seller/catalog' ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                             <span className="text-xl">{item.icon}</span>
                             {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
                         </Link>
@@ -139,9 +142,8 @@ export default function SellerCatalog() {
 
             {/* Main */}
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
-                {/* Header */}
                 <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>Product Catalog</h2>
+                    <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>Exported Products</h2>
                     <p className="text-gray-500 mt-1">Browse products from verified Indian suppliers and add them to your store.</p>
                 </div>
 
@@ -149,8 +151,7 @@ export default function SellerCatalog() {
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                     <div className="relative flex-1">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-                        <input
-                            value={search} onChange={e => setSearch(e.target.value)}
+                        <input value={search} onChange={e => setSearch(e.target.value)}
                             className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
                             placeholder="Search products..." />
                     </div>
@@ -164,13 +165,11 @@ export default function SellerCatalog() {
                     </div>
                 </div>
 
-                {/* Stats bar */}
                 <div className="mb-6 flex items-center gap-2 text-sm text-gray-500">
                     <span className="font-semibold text-[#143D59]">{filtered.length}</span> products found
                     {search && <span>for "<span className="font-medium">{search}</span>"</span>}
                 </div>
 
-                {/* Products Grid */}
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
@@ -191,7 +190,6 @@ export default function SellerCatalog() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filtered.map(product => (
                             <div key={product.id} className="bg-white rounded-2xl border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                                {/* Product Image */}
                                 <div className="relative h-52 bg-gray-50 overflow-hidden">
                                     {product.images?.[0] ? (
                                         <img src={product.images[0]} alt={product.name}
@@ -211,12 +209,10 @@ export default function SellerCatalog() {
                                     )}
                                 </div>
 
-                                {/* Product Info */}
                                 <div className="p-5">
                                     <p className="text-xs text-gray-400 mb-1">{product.supplier_profiles?.business_name || 'Verified Supplier'}</p>
                                     <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 leading-snug">{product.name}</h3>
 
-                                    {/* Pricing */}
                                     <div className="bg-[#F7F8FA] rounded-xl p-3 mb-4 space-y-1">
                                         <div className="flex justify-between text-xs text-gray-500">
                                             <span>Supplier price</span>
@@ -236,7 +232,6 @@ export default function SellerCatalog() {
                                         </div>
                                     </div>
 
-                                    {/* Seller profit input */}
                                     <div className="mb-4">
                                         <label className="text-xs text-gray-500 font-medium mb-1 block">Your desired profit (₹)</label>
                                         <input
@@ -255,7 +250,6 @@ export default function SellerCatalog() {
                                         )}
                                     </div>
 
-                                    {/* Stock */}
                                     <div className="flex items-center justify-between mb-4">
                                         <span className="text-xs text-gray-400">
                                             {product.weight_grams ? `${product.weight_grams}g` : 'Weight N/A'}
@@ -265,7 +259,6 @@ export default function SellerCatalog() {
                                         </span>
                                     </div>
 
-                                    {/* CTA */}
                                     <button
                                         onClick={() => addToStore(product)}
                                         disabled={addedProducts[product.id] || product.stock === 0}

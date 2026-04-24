@@ -5,8 +5,11 @@ import { supabase } from '../../supabase'
 
 const NAV = [
     { icon: '⚡', label: 'Dashboard', path: '/seller/dashboard' },
-    { icon: '🛍️', label: 'Catalog', path: '/seller/catalog' },
-    { icon: '📦', label: 'Orders', path: '/seller/orders' },
+    { icon: '👤', label: 'Account Details', path: '/seller/account' },
+    { icon: '🔗', label: 'Linked Stores', path: '/seller/stores' },
+    { icon: '📤', label: 'Exported Products', path: '/seller/catalog' },
+    { icon: '📥', label: 'Imported Orders', path: '/seller/orders' },
+    { icon: '🚚', label: 'Shipments', path: '/seller/shipments' },
 ]
 
 export default function SellerDashboard() {
@@ -70,8 +73,7 @@ export default function SellerDashboard() {
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
 
             {/* Sidebar */}
-            <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-[#143D59] min-h-screen flex flex-col`}>
-                {/* Logo */}
+            <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-[#143D59] min-h-screen flex flex-col fixed top-0 left-0 z-10`}>
                 <div className="p-6 flex items-center justify-between border-b border-white/10">
                     {sidebarOpen && (
                         <div>
@@ -84,18 +86,16 @@ export default function SellerDashboard() {
                     </button>
                 </div>
 
-                {/* Nav */}
                 <nav className="flex-1 p-4 space-y-1">
                     {NAV.map(item => (
                         <Link key={item.path} to={item.path}
-                            className="flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all group">
+                            className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${item.path === '/seller/dashboard' ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                             <span className="text-xl">{item.icon}</span>
                             {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
                         </Link>
                     ))}
                 </nav>
 
-                {/* User */}
                 <div className="p-4 border-t border-white/10">
                     {sidebarOpen && (
                         <div className="flex items-center gap-3 mb-3 px-3">
@@ -117,8 +117,7 @@ export default function SellerDashboard() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-8 overflow-auto">
-                {/* Header */}
+            <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>
                         Good morning{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''} 👋
@@ -149,33 +148,33 @@ export default function SellerDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                     <Link to="/seller/catalog"
                         className="bg-[#143D59] hover:bg-[#1a4f73] text-white rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
-                        <span className="text-3xl">🛍️</span>
+                        <span className="text-3xl">📤</span>
                         <div>
-                            <p className="font-bold">Browse Catalog</p>
-                            <p className="text-white/60 text-sm">Find products to sell</p>
+                            <p className="font-bold">Exported Products</p>
+                            <p className="text-white/60 text-sm">Browse & add products</p>
                         </div>
                         <span className="ml-auto text-white/40 group-hover:text-white transition-colors">→</span>
                     </Link>
 
                     <Link to="/seller/orders"
                         className="bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
-                        <span className="text-3xl">📋</span>
+                        <span className="text-3xl">📥</span>
                         <div>
-                            <p className="font-bold">Manage Orders</p>
+                            <p className="font-bold">Imported Orders</p>
                             <p className="text-[#143D59]/60 text-sm">Pay & fulfill orders</p>
                         </div>
                         <span className="ml-auto text-[#143D59]/40 group-hover:text-[#143D59] transition-colors">→</span>
                     </Link>
 
-                    <button
-                        className="bg-white hover:bg-gray-50 text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg border border-gray-100 group w-full">
+                    <Link to="/seller/stores"
+                        className="bg-white hover:bg-gray-50 text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg border border-gray-100 group">
                         <span className="text-3xl">🔗</span>
-                        <div className="text-left">
-                            <p className="font-bold">Connect Shopify</p>
-                            <p className="text-gray-400 text-sm">Sync your store</p>
+                        <div>
+                            <p className="font-bold">Linked Stores</p>
+                            <p className="text-gray-400 text-sm">Connect Shopify</p>
                         </div>
                         <span className="ml-auto text-gray-300 group-hover:text-[#143D59] transition-colors">→</span>
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Recent Orders */}
@@ -191,10 +190,10 @@ export default function SellerDashboard() {
                         <div className="p-12 text-center">
                             <p className="text-4xl mb-3">📭</p>
                             <p className="text-gray-500 font-medium">No orders yet</p>
-                            <p className="text-gray-400 text-sm mt-1">Start by browsing the catalog and connecting your Shopify store</p>
-                            <Link to="/seller/catalog"
+                            <p className="text-gray-400 text-sm mt-1">Connect your Shopify store to start importing orders</p>
+                            <Link to="/seller/stores"
                                 className="inline-block mt-4 bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2 rounded-xl hover:bg-[#e0a218] transition-all">
-                                Browse Catalog
+                                Connect Shopify
                             </Link>
                         </div>
                     ) : (
