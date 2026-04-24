@@ -1,19 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../supabase'
-
-const NAV = [
-    { icon: '⚡', label: 'Dashboard', path: '/seller/dashboard' },
-    { icon: '👤', label: 'Account Details', path: '/seller/account' },
-    { icon: '🔗', label: 'Linked Stores', path: '/seller/stores' },
-    { icon: '📤', label: 'Exported Products', path: '/seller/catalog' },
-    { icon: '📥', label: 'Imported Orders', path: '/seller/orders' },
-    { icon: '🚚', label: 'Shipments', path: '/seller/shipments' },
-]
+import SellerSidebar from '../../components/SellerSidebar'
 
 export default function SellerCatalog() {
-    const { profile, signOut } = useAuth()
+    const { profile } = useAuth()
     const [products, setProducts] = useState([])
     const [filtered, setFiltered] = useState([])
     const [search, setSearch] = useState('')
@@ -98,56 +89,14 @@ export default function SellerCatalog() {
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
 
-            {/* Sidebar */}
-            <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-[#143D59] min-h-screen flex flex-col fixed top-0 left-0 z-10`}>
-                <div className="p-6 flex items-center justify-between border-b border-white/10">
-                    {sidebarOpen && (
-                        <div>
-                            <h1 className="text-white font-bold text-xl" style={{ fontFamily: "'Syne', sans-serif" }}>Dropspot.</h1>
-                            <p className="text-[#F5B41A] text-xs mt-0.5">Seller Portal</p>
-                        </div>
-                    )}
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white/60 hover:text-white transition-colors ml-auto">
-                        {sidebarOpen ? '◀' : '▶'}
-                    </button>
-                </div>
-                <nav className="flex-1 p-4 space-y-1">
-                    {NAV.map(item => (
-                        <Link key={item.path} to={item.path}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${item.path === '/seller/catalog' ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-                            <span className="text-xl">{item.icon}</span>
-                            {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
-                        </Link>
-                    ))}
-                </nav>
-                <div className="p-4 border-t border-white/10">
-                    {sidebarOpen && (
-                        <div className="flex items-center gap-3 mb-3 px-3">
-                            <div className="w-8 h-8 rounded-full bg-[#F5B41A] flex items-center justify-center text-[#143D59] font-bold text-sm">
-                                {profile?.full_name?.[0] || 'S'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-medium truncate">{profile?.full_name || 'Seller'}</p>
-                                <p className="text-white/40 text-xs">Seller</p>
-                            </div>
-                        </div>
-                    )}
-                    <button onClick={async () => { await signOut(); window.location.href = '/login' }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all">
-                        <span>🚪</span>
-                        {sidebarOpen && <span className="text-sm">Sign out</span>}
-                    </button>
-                </div>
-            </aside>
+            <SellerSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-            {/* Main */}
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>Exported Products</h2>
                     <p className="text-gray-500 mt-1">Browse products from verified Indian suppliers and add them to your store.</p>
                 </div>
 
-                {/* Search & Filter */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                     <div className="relative flex-1">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>

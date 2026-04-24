@@ -1,24 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../supabase'
-
-const NAV = [
-    { icon: '⚡', label: 'Dashboard', path: '/seller/dashboard' },
-    { icon: '👤', label: 'Account Details', path: '/seller/account' },
-    { icon: '🔗', label: 'Linked Stores', path: '/seller/stores' },
-    { icon: '📤', label: 'Exported Products', path: '/seller/catalog' },
-    { icon: '📥', label: 'Imported Orders', path: '/seller/orders' },
-    { icon: '🚚', label: 'Shipments', path: '/seller/shipments' },
-    { icon: '📍', label: 'Address', path: '/seller/address' },
-    { icon: '❤️', label: 'Wishlist', path: '/seller/wishlist' },
-    { icon: '🧾', label: 'Invoices', path: '/seller/invoices' },
-]
+import SellerSidebar from '../../components/SellerSidebar'
 
 const TABS = ['Profile Information', 'Password', 'Business Details', 'Bank Details', 'KYC Details']
 
 export default function SellerAccount() {
-    const { profile, signOut } = useAuth()
+    const { profile } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activeTab, setActiveTab] = useState('Profile Information')
     const [loading, setLoading] = useState(true)
@@ -42,7 +30,6 @@ export default function SellerAccount() {
         account_holder: '',
         pan: '',
         aadhaar: '',
-        current_password: '',
         new_password: '',
         confirm_password: '',
     })
@@ -87,13 +74,11 @@ export default function SellerAccount() {
                     full_name: form.full_name,
                     phone: '+91' + form.phone
                 }).eq('id', profile?.id)
-
                 await supabase.from('seller_profiles').update({
                     store_name: form.store_name,
                     store_slug: form.store_slug,
                 }).eq('user_id', profile?.id)
             }
-
             if (activeTab === 'Bank Details') {
                 await supabase.from('seller_profiles').update({
                     payment_method: {
@@ -105,7 +90,6 @@ export default function SellerAccount() {
                     }
                 }).eq('user_id', profile?.id)
             }
-
             if (activeTab === 'Password') {
                 if (form.new_password !== form.confirm_password) {
                     setError('Passwords do not match')
@@ -114,7 +98,6 @@ export default function SellerAccount() {
                 const { error } = await supabase.auth.updateUser({ password: form.new_password })
                 if (error) throw error
             }
-
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         } catch (err) {
@@ -128,49 +111,8 @@ export default function SellerAccount() {
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
 
-            {/* Sidebar */}
-            <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-[#143D59] min-h-screen flex flex-col fixed top-0 left-0 z-10`}>
-                <div className="p-6 flex items-center justify-between border-b border-white/10">
-                    {sidebarOpen && (
-                        <div>
-                            <h1 className="text-white font-bold text-xl" style={{ fontFamily: "'Syne', sans-serif" }}>Dropspot.</h1>
-                            <p className="text-[#F5B41A] text-xs mt-0.5">Seller Portal</p>
-                        </div>
-                    )}
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white/60 hover:text-white transition-colors ml-auto">
-                        {sidebarOpen ? '◀' : '▶'}
-                    </button>
-                </div>
-                <nav className="flex-1 p-4 space-y-1">
-                    {NAV.map(item => (
-                        <Link key={item.path} to={item.path}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${item.path === '/seller/account' ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-                            <span className="text-xl">{item.icon}</span>
-                            {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
-                        </Link>
-                    ))}
-                </nav>
-                <div className="p-4 border-t border-white/10">
-                    {sidebarOpen && (
-                        <div className="flex items-center gap-3 mb-3 px-3">
-                            <div className="w-8 h-8 rounded-full bg-[#F5B41A] flex items-center justify-center text-[#143D59] font-bold text-sm">
-                                {profile?.full_name?.[0] || 'S'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-medium truncate">{profile?.full_name || 'Seller'}</p>
-                                <p className="text-white/40 text-xs">Seller</p>
-                            </div>
-                        </div>
-                    )}
-                    <button onClick={async () => { await signOut(); window.location.href = '/login' }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all">
-                        <span>🚪</span>
-                        {sidebarOpen && <span className="text-sm">Sign out</span>}
-                    </button>
-                </div>
-            </aside>
+            <SellerSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-            {/* Main */}
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>Account Details</h2>
@@ -178,7 +120,6 @@ export default function SellerAccount() {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-100">
-                    {/* Tabs */}
                     <div className="flex border-b border-gray-100 overflow-x-auto">
                         {TABS.map(tab => (
                             <button key={tab} onClick={() => { setActiveTab(tab); setSaved(false); setError('') }}
@@ -191,14 +132,9 @@ export default function SellerAccount() {
                     </div>
 
                     <div className="p-8">
-                        {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">{error}</div>
-                        )}
-                        {saved && (
-                            <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-6 text-sm">✅ Saved successfully!</div>
-                        )}
+                        {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">{error}</div>}
+                        {saved && <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-6 text-sm">✅ Saved successfully!</div>}
 
-                        {/* Profile Information */}
                         {activeTab === 'Profile Information' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
                                 <div>
@@ -239,7 +175,6 @@ export default function SellerAccount() {
                             </div>
                         )}
 
-                        {/* Password */}
                         {activeTab === 'Password' && (
                             <div className="space-y-5 max-w-md">
                                 <div>
@@ -257,7 +192,6 @@ export default function SellerAccount() {
                             </div>
                         )}
 
-                        {/* Business Details */}
                         {activeTab === 'Business Details' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
                                 <div>
@@ -293,7 +227,6 @@ export default function SellerAccount() {
                             </div>
                         )}
 
-                        {/* Bank Details */}
                         {activeTab === 'Bank Details' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
                                 <div className="md:col-span-2">
@@ -329,7 +262,6 @@ export default function SellerAccount() {
                             </div>
                         )}
 
-                        {/* KYC Details */}
                         {activeTab === 'KYC Details' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
                                 <div>

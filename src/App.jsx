@@ -11,6 +11,8 @@ import SellerOrders from './pages/seller/Orders'
 import SellerAccount from './pages/seller/Account'
 import SellerStores from './pages/seller/Stores'
 import SellerShipments from './pages/seller/Shipments'
+import SellerWishlist from './pages/seller/Wishlist'
+import SellerInvoices from './pages/seller/Invoices'
 
 import SupplierDashboard from './pages/supplier/Dashboard'
 import SupplierProducts from './pages/supplier/Products'
@@ -37,6 +39,8 @@ function AppRoutes() {
       <Route path="/seller/account" element={<ProtectedRoute allowedRole="seller"><SellerAccount /></ProtectedRoute>} />
       <Route path="/seller/stores" element={<ProtectedRoute allowedRole="seller"><SellerStores /></ProtectedRoute>} />
       <Route path="/seller/shipments" element={<ProtectedRoute allowedRole="seller"><SellerShipments /></ProtectedRoute>} />
+      <Route path="/seller/wishlist" element={<ProtectedRoute allowedRole="seller"><SellerWishlist /></ProtectedRoute>} />
+      <Route path="/seller/invoices" element={<ProtectedRoute allowedRole="seller"><SellerInvoices /></ProtectedRoute>} />
 
       <Route path="/supplier/dashboard" element={<ProtectedRoute allowedRole="supplier"><SupplierDashboard /></ProtectedRoute>} />
       <Route path="/supplier/products" element={<ProtectedRoute allowedRole="supplier"><SupplierProducts /></ProtectedRoute>} />
