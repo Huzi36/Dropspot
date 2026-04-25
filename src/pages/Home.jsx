@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../supabase'
-import { Search, ShoppingCart, User, ChevronRight, Star } from 'lucide-react'
+import { Search, User, ChevronRight, Star } from 'lucide-react'
 
 const CATEGORIES = [
     { name: 'All', icon: '🛍️' },
@@ -62,6 +62,11 @@ export default function Home() {
         return Math.ceil(product.supplier_price + margin + shipping)
     }
 
+    function handleProductClick(productId) {
+        if (!user) return navigate('/login')
+        navigate(`/product/${productId}`)
+    }
+
     return (
         <div className="min-h-screen bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
@@ -75,14 +80,12 @@ export default function Home() {
             {/* Navbar */}
             <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3">
-                    {/* Logo */}
                     <Link to="/" className="flex-shrink-0">
                         <h1 className="text-[#143D59] text-xl font-black" style={{ fontFamily: "'Syne', sans-serif" }}>
                             Drop<span className="text-[#F5B41A]">spot.</span>
                         </h1>
                     </Link>
 
-                    {/* Search */}
                     <div className="flex-1 relative">
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -93,7 +96,6 @@ export default function Home() {
                         />
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {user ? (
                             <Link to={profile?.role === 'supplier' ? '/supplier/dashboard' : '/seller/dashboard'}
@@ -221,6 +223,7 @@ export default function Home() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                         {filtered.map(product => (
                             <div key={product.id}
+                                onClick={() => handleProductClick(product.id)}
                                 className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all group cursor-pointer">
                                 {/* Image */}
                                 <div className="relative h-44 bg-gray-50 overflow-hidden">
@@ -247,7 +250,6 @@ export default function Home() {
                                     <p className="text-xs text-gray-400 mb-1 truncate">{product.supplier_profiles?.business_name || 'Verified Supplier'}</p>
                                     <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mb-2">{product.name}</h4>
 
-                                    {/* Price */}
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-[#143D59] font-black text-base">₹{calcPrice(product).toLocaleString()}</p>
@@ -259,20 +261,11 @@ export default function Home() {
                                         </div>
                                     </div>
 
-                                    {/* CTA */}
-                                    {user && profile?.role === 'seller' ? (
-                                        <button
-                                            onClick={() => navigate('/seller/catalog')}
-                                            className="w-full mt-3 bg-[#F5B41A] text-[#143D59] text-xs font-bold py-2 rounded-xl hover:bg-[#e0a218] transition-all">
-                                            + Add to Store
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => navigate('/signup')}
-                                            className="w-full mt-3 bg-[#143D59] text-white text-xs font-bold py-2 rounded-xl hover:bg-[#1a4f73] transition-all">
-                                            Sell This Product
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={e => { e.stopPropagation(); handleProductClick(product.id) }}
+                                        className="w-full mt-3 bg-[#F5B41A] text-[#143D59] text-xs font-bold py-2 rounded-xl hover:bg-[#e0a218] transition-all">
+                                        {user ? 'View Product' : 'Login to View'}
+                                    </button>
                                 </div>
                             </div>
                         ))}

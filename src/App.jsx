@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import Product from './pages/Product'
 
 import SellerDashboard from './pages/seller/Dashboard'
 import SellerCatalog from './pages/seller/Catalog'
@@ -32,6 +33,7 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/product/:id" element={<Product />} />
 
       <Route path="/seller/dashboard" element={<ProtectedRoute allowedRole="seller"><SellerDashboard /></ProtectedRoute>} />
       <Route path="/seller/catalog" element={<ProtectedRoute allowedRole="seller"><SellerCatalog /></ProtectedRoute>} />
