@@ -1,46 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../supabase'
-import { Search, User, ChevronRight, Star } from 'lucide-react'
+import { Search, Heart, User, ShoppingBag, Package, Zap, TrendingUp, Shield, ChevronRight, ChevronLeft } from 'lucide-react'
 
 const CATEGORIES = [
-    { name: 'All', icon: '🛍️' },
-    { name: 'Fashion', icon: '👗' },
-    { name: 'Electronics', icon: '📱' },
-    { name: 'Beauty', icon: '💄' },
-    { name: 'Home', icon: '🏠' },
-    { name: 'Fitness', icon: '💪' },
-    { name: 'Kids', icon: '🧸' },
-    { name: 'Automobile', icon: '🚗' },
-    { name: 'Gifts', icon: '🎁' },
+    { name: 'Fashion', emoji: '👗' },
+    { name: 'Electronics', emoji: '📱' },
+    { name: 'Beauty', emoji: '💄' },
+    { name: 'Home & Kitchen', emoji: '🏠' },
+    { name: 'Fitness', emoji: '💪' },
+    { name: 'Baby & Kids', emoji: '🧸' },
+    { name: 'Automobile', emoji: '🚗' },
+    { name: 'Gifts & Decor', emoji: '🎁' },
 ]
 
 const HOW_IT_WORKS = [
-    { icon: '🔍', title: 'Browse', desc: 'Explore verified products' },
-    { icon: '💰', title: 'Set Price', desc: 'Add your profit margin' },
-    { icon: '🚚', title: 'We Ship', desc: 'Supplier packs & delivers' },
+    { icon: Package, title: 'Find Products That Sell', desc: 'Browse verified products from trusted Indian suppliers' },
+    { icon: Zap, title: 'Connect Your Store', desc: 'Link your Shopify store and sync orders automatically' },
+    { icon: TrendingUp, title: 'Focus on Marketing', desc: 'Suppliers handle packaging and dispatch for you' },
+    { icon: Shield, title: 'Earn Profits, Hassle-Free', desc: 'You pay only supplier price + shipping. Keep the rest' },
 ]
 
 export default function Home() {
     const { user, profile } = useAuth()
     const navigate = useNavigate()
     const [products, setProducts] = useState([])
-    const [filtered, setFiltered] = useState([])
     const [category, setCategory] = useState('All')
     const [search, setSearch] = useState('')
     const [loading, setLoading] = useState(true)
+    const [wishlist, setWishlist] = useState([])
+    const [searchCategory, setSearchCategory] = useState('All Category')
 
     useEffect(() => { fetchProducts() }, [])
-
-    useEffect(() => {
-        let result = products
-        if (category !== 'All') result = result.filter(p =>
-            p.category?.toLowerCase().includes(category.toLowerCase()))
-        if (search) result = result.filter(p =>
-            p.name.toLowerCase().includes(search.toLowerCase()))
-        setFiltered(result)
-    }, [category, search, products])
 
     async function fetchProducts() {
         try {
@@ -50,7 +42,6 @@ export default function Home() {
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
             setProducts(data || [])
-            setFiltered(data || [])
         } finally {
             setLoading(false)
         }
@@ -62,257 +53,420 @@ export default function Home() {
         return Math.ceil(product.supplier_price + margin + shipping)
     }
 
-    function handleProductClick(productId) {
-        if (!user) return navigate('/login')
-        navigate(`/product/${productId}`)
+    function toggleWishlist(e, id) {
+        e.stopPropagation()
+        setWishlist(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
     }
 
-    return (
-        <div className="min-h-screen bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
+    const newArrivals = products.slice(0, 10)
+    const bestSellers = [...products].slice(0, 10)
+    const trending = [...products].reverse().slice(0, 10)
 
-            {/* Announcement Bar */}
-            <div className="bg-[#143D59] text-white text-xs text-center py-2 px-4">
-                🚀 Sell on Dropspot — Zero inventory, set your own margins.{' '}
-                <Link to="/signup" className="text-[#F5B41A] font-semibold underline">Join free →</Link>
-            </div>
+    function ProductCard({ product }) {
+        const price = calcPrice(product)
+        const mrp = product.retail_price || Math.ceil(product.supplier_price * 1.5)
+        const discount = Math.round(((mrp - price) / mrp) * 100)
 
-            {/* Navbar */}
-            <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/" className="flex-shrink-0">
-                        <h1 className="text-[#143D59] text-xl font-black" style={{ fontFamily: "'Syne', sans-serif" }}>
-                            Drop<span className="text-[#F5B41A]">spot.</span>
-                        </h1>
-                    </Link>
+        return (
+            <div
+                onClick={() => navigate(`/product/${product.id}`)}
+                className="cursor-pointer group flex-shrink-0 border border-gray-100 hover:shadow-md transition-all duration-200 bg-white"
+                style={{ width: '220px' }}>
+                {/* Image - flush to top, no border radius */}
+                <div className="relative overflow-hidden bg-gray-50" style={{ height: '220px' }}>
+                    {product.images?.[0] ? (
+                        <img src={product.images[0]} alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                            <Package size={40} className="text-gray-200" />
+                        </div>
+                    )}
+                    {/* Payment badge */}
+                    {product.payment_type && (
+                        <span className={`absolute top-0 left-0 text-white text-[10px] font-bold px-2 py-1 ${product.payment_type === 'prepaid_cod' ? 'bg-teal-500' : 'bg-blue-500'}`}>
+                            {product.payment_type === 'prepaid_cod' ? 'Prepaid & COD' : 'Prepaid'}
+                        </span>
+                    )}
+                    {/* Wishlist */}
+                    <button
+                        onClick={e => toggleWishlist(e, product.id)}
+                        className="absolute top-2 right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+                        <Heart size={13} className={wishlist.includes(product.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'} />
+                    </button>
+                </div>
 
-                    <div className="flex-1 relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Search products..."
-                            className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        {user ? (
-                            <Link to={profile?.role === 'supplier' ? '/supplier/dashboard' : '/seller/dashboard'}
-                                className="flex items-center gap-1.5 bg-[#143D59] text-white text-xs font-semibold px-3 py-2 rounded-xl">
-                                <User size={14} />
-                                <span className="hidden sm:block">Dashboard</span>
-                            </Link>
-                        ) : (
-                            <>
-                                <Link to="/login"
-                                    className="text-sm text-gray-600 font-medium px-3 py-2 hidden sm:block">
-                                    Sign in
-                                </Link>
-                                <Link to="/signup"
-                                    className="bg-[#F5B41A] text-[#143D59] text-xs font-bold px-3 py-2 rounded-xl">
-                                    Start Selling
-                                </Link>
-                            </>
+                {/* Info */}
+                <div className="p-3">
+                    <p className="text-[13px] text-gray-800 font-medium line-clamp-2 leading-snug mb-1.5" style={{ minHeight: '36px' }}>
+                        {product.name}
+                    </p>
+                    <p className="text-xs text-gray-400 mb-2">0 reviews</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[#143D59] font-bold text-sm">₹{price.toLocaleString()}</span>
+                        <span className="text-gray-400 text-xs line-through">₹{mrp.toLocaleString()}</span>
+                        {discount > 0 && (
+                            <span className="text-green-600 text-xs font-semibold">{discount}% Off</span>
                         )}
                     </div>
                 </div>
-            </nav>
+            </div>
+        )
+    }
 
-            {/* Hero Banner */}
-            <div className="bg-[#143D59] relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20"
-                    style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #F5B41A 0%, transparent 60%)' }} />
-                <div className="max-w-7xl mx-auto px-4 py-8 md:py-10 flex items-center justify-between relative">
-                    <div className="max-w-lg">
-                        <p className="text-[#F5B41A] text-xs font-semibold uppercase tracking-widest mb-2">New Arrivals</p>
-                        <h2 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3"
-                            style={{ fontFamily: "'Syne', sans-serif" }}>
-                            Sell Without<br />Holding Stock
-                        </h2>
-                        <p className="text-blue-200 text-sm mb-5 hidden md:block">
-                            Browse verified Indian suppliers. Set your price. We ship directly to your customers.
-                        </p>
-                        <Link to="/signup"
-                            className="inline-block bg-[#F5B41A] text-[#143D59] font-bold text-sm px-6 py-2.5 rounded-xl hover:bg-[#e0a218] transition-all">
-                            Start Selling Free →
-                        </Link>
+    function Carousel({ title, items }) {
+        const scrollRef = useRef(null)
+
+        function scroll(dir) {
+            if (scrollRef.current) {
+                scrollRef.current.scrollBy({ left: dir * 460, behavior: 'smooth' })
+            }
+        }
+
+        return (
+            <div className="mb-10">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-[#143D59]">{title}</h2>
+                    <button className="text-sm text-[#143D59] font-medium hover:underline">
+                        View All
+                    </button>
+                </div>
+
+                <div className="relative">
+                    {/* Left Arrow */}
+                    <button
+                        onClick={() => scroll(-1)}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                        <ChevronLeft size={16} className="text-gray-600" />
+                    </button>
+
+                    {/* Cards */}
+                    <div
+                        ref={scrollRef}
+                        className="flex gap-0 overflow-x-auto border border-gray-100"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        {items.map((product, i) => (
+                            <div key={product.id} className={i > 0 ? 'border-l border-gray-100' : ''}>
+                                <ProductCard product={product} />
+                            </div>
+                        ))}
                     </div>
-                    <div className="hidden md:flex gap-4">
-                        {['📦', '🚚', '💰'].map((icon, i) => (
-                            <div key={i} className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-3xl border border-white/20">
-                                {icon}
+
+                    {/* Right Arrow */}
+                    <button
+                        onClick={() => scroll(1)}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                        <ChevronRight size={16} className="text-gray-600" />
+                    </button>
+                </div>
+
+                {/* Dot indicator */}
+                <div className="flex items-center justify-center gap-1.5 mt-4">
+                    <button className="w-6 h-1.5 bg-[#143D59] rounded-full" />
+                    <button className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
+                    <button className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
+                </div>
+            </div>
+        )
+    }
+
+    function HotNewArrivals({ items }) {
+        return (
+            <div className="mb-10">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-[#143D59]">Hot New Arrivals</h2>
+                    <button className="text-sm text-[#143D59] font-medium hover:underline">View All</button>
+                </div>
+                <div className="border border-gray-100">
+                    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                        {[0, 1, 2].map(col => (
+                            <div key={col} className="divide-y divide-gray-100">
+                                {items.slice(col * 3, col * 3 + 3).map(product => {
+                                    const price = calcPrice(product)
+                                    const mrp = product.retail_price || Math.ceil(product.supplier_price * 1.5)
+                                    return (
+                                        <div key={product.id}
+                                            onClick={() => navigate(`/product/${product.id}`)}
+                                            className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                                            <div className="w-16 h-16 bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100">
+                                                {product.images?.[0]
+                                                    ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                                                    : <div className="w-full h-full flex items-center justify-center"><Package size={20} className="text-gray-200" /></div>}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-gray-800 font-medium line-clamp-2 leading-snug">{product.name}</p>
+                                                <div className="flex items-center gap-2 mt-1.5">
+                                                    <span className="text-[#143D59] font-bold text-sm">₹{price.toLocaleString()}</span>
+                                                    <span className="text-gray-400 text-xs line-through">₹{mrp.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+        )
+    }
 
-            {/* Category Pills */}
-            <div className="bg-white border-b border-gray-100 sticky top-14 z-40">
+    return (
+        <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+            {/* Announcement Bar */}
+            <div className="bg-[#143D59] text-white text-xs text-center py-2 px-4">
+                Customer access coming soon — Currently onboarding sellers & suppliers.{' '}
+                <Link to="/signup" className="text-[#F5B41A] font-semibold underline ml-1">Join free →</Link>
+            </div>
+
+            {/* Top Navbar */}
+            <div className="border-b border-gray-100 bg-white">
                 <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex gap-2 overflow-x-auto py-3 scrollbar-hide">
-                        {CATEGORIES.map(cat => (
-                            <button key={cat.name} onClick={() => setCategory(cat.name)}
-                                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${category === cat.name
-                                    ? 'bg-[#143D59] text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                                <span>{cat.icon}</span>
-                                <span>{cat.name}</span>
+                    <div className="flex items-center gap-4 h-16">
+                        <Link to="/" className="flex-shrink-0 flex items-center gap-2">
+                            <div className="w-8 h-8 bg-[#143D59] rounded-lg flex items-center justify-center">
+                                <ShoppingBag size={16} className="text-[#F5B41A]" />
+                            </div>
+                            <span className="text-[#143D59] text-xl font-black tracking-tight">
+                                DROP<span className="text-[#F5B41A]">SPOT</span>
+                            </span>
+                        </Link>
+
+                        <div className="flex-1 flex items-center border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors">
+                            <select value={searchCategory} onChange={e => setSearchCategory(e.target.value)}
+                                className="px-3 py-2.5 text-sm text-gray-600 border-r border-gray-200 bg-gray-50 outline-none cursor-pointer hidden md:block">
+                                <option>All Category</option>
+                                {CATEGORIES.map(c => <option key={c.name}>{c.name}</option>)}
+                            </select>
+                            <input value={search} onChange={e => setSearch(e.target.value)}
+                                placeholder="Search products..."
+                                className="flex-1 px-4 py-2.5 text-sm outline-none text-gray-800 bg-white" />
+                            <button className="bg-[#F5B41A] px-5 py-2.5 flex items-center justify-center hover:bg-[#e0a218] transition-colors">
+                                <Search size={16} className="text-[#143D59]" />
                             </button>
+                        </div>
+
+                        <div className="flex items-center gap-5 flex-shrink-0">
+                            <button className="flex flex-col items-center text-gray-500 hover:text-[#143D59] transition-colors">
+                                <Heart size={20} />
+                                <span className="text-xs mt-0.5 hidden sm:block">My Items</span>
+                            </button>
+                            {user ? (
+                                <Link to={profile?.role === 'supplier' ? '/seller-console/dashboard' : '/seller/dashboard'}
+                                    className="flex flex-col items-center text-gray-500 hover:text-[#143D59] transition-colors">
+                                    <User size={20} />
+                                    <span className="text-xs mt-0.5 hidden sm:block">Account</span>
+                                </Link>
+                            ) : (
+                                <Link to="/login"
+                                    className="flex flex-col items-center text-gray-500 hover:text-[#143D59] transition-colors">
+                                    <User size={20} />
+                                    <span className="text-xs mt-0.5 hidden sm:block">Sign In</span>
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Sub Navbar */}
+            <div className="bg-[#143D59] sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-10">
+                    <div className="flex items-center gap-6">
+                        <button className="flex items-center gap-2 text-white text-sm font-medium">
+                            <span>☰</span> Browse Categories
+                        </button>
+                        <Link to="/" className="text-white/70 text-sm hover:text-white transition-colors">Home</Link>
+                        <Link to="/" className="text-white/70 text-sm hover:text-white transition-colors">Shop</Link>
+                    </div>
+                    <Link to="/seller-console" className="text-white/70 text-sm hover:text-white transition-colors">
+                        Become A Supplier
+                    </Link>
+                </div>
+            </div>
+
+            {/* Hero Banner */}
+            <div className="max-w-7xl mx-auto px-4 py-4">
+                <div className="relative bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 overflow-hidden" style={{ height: '340px' }}>
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="px-12 max-w-xl">
+                            <span className="inline-block bg-[#F5B41A] text-[#143D59] text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
+                                New Arrivals
+                            </span>
+                            <h1 className="text-4xl md:text-5xl font-black text-[#143D59] leading-tight mb-3">
+                                Sell Without<br />Holding Stock
+                            </h1>
+                            <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+                                Browse verified Indian suppliers. Set your price.<br />
+                                We ship directly to your customers.
+                            </p>
+                            <div className="flex gap-3">
+                                <Link to="/signup"
+                                    className="bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2.5 hover:bg-[#e0a218] transition-all text-sm">
+                                    Start Selling Free
+                                </Link>
+                                <button onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                    className="bg-white border border-gray-200 text-[#143D59] font-semibold px-6 py-2.5 hover:border-[#143D59] transition-all text-sm">
+                                    Browse Products
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden md:flex items-center justify-center">
+                        <div className="text-9xl opacity-10">📦</div>
+                    </div>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                        {[0, 1, 2].map(i => (
+                            <div key={i} className={`rounded-full transition-all cursor-pointer ${i === 0 ? 'w-5 h-1.5 bg-[#143D59]' : 'w-1.5 h-1.5 bg-gray-300'}`} />
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* How it Works */}
+            <div className="max-w-7xl mx-auto px-4 py-6 border-b border-gray-100">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                    {HOW_IT_WORKS.map((item, i) => {
+                        const Icon = item.icon
+                        return (
+                            <div key={i} className="flex items-start gap-3">
+                                <Icon size={32} className="text-[#143D59] flex-shrink-0" strokeWidth={1} />
+                                <div>
+                                    <p className="text-sm font-semibold text-[#143D59]">{item.title}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{item.desc}</p>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 py-6">
-
-                {/* How it works strip */}
-                <div className="bg-white rounded-2xl p-4 mb-6 border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        {HOW_IT_WORKS.map((item, i) => (
-                            <div key={i} className="flex items-center gap-2 flex-1">
-                                <span className="text-2xl">{item.icon}</span>
-                                <div className="hidden sm:block">
-                                    <p className="text-xs font-bold text-[#143D59]">{item.title}</p>
-                                    <p className="text-xs text-gray-400">{item.desc}</p>
-                                </div>
-                                {i < HOW_IT_WORKS.length - 1 && (
-                                    <ChevronRight size={16} className="text-gray-300 ml-auto flex-shrink-0" />
-                                )}
-                            </div>
-                        ))}
-                        <Link to="/signup"
-                            className="ml-4 bg-[#F5B41A] text-[#143D59] text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap flex-shrink-0">
-                            Join Free
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Products Header */}
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 className="font-bold text-[#143D59] text-lg" style={{ fontFamily: "'Syne', sans-serif" }}>
-                            {category === 'All' ? 'All Products' : category}
-                        </h3>
-                        <p className="text-gray-400 text-xs mt-0.5">{filtered.length} products available</p>
-                    </div>
-                </div>
-
-                {/* Products Grid */}
+            <div id="products-section" className="max-w-7xl mx-auto px-4 py-8">
                 {loading ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                        {[...Array(10)].map((_, i) => (
-                            <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
-                                <div className="bg-gray-200 h-44" />
+                    <div className="flex gap-0 overflow-hidden mb-10 border border-gray-100">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="flex-shrink-0 animate-pulse border-r border-gray-100 last:border-0" style={{ width: '220px' }}>
+                                <div className="bg-gray-100" style={{ height: '220px' }} />
                                 <div className="p-3">
-                                    <div className="bg-gray-200 rounded h-3 mb-2 w-3/4" />
-                                    <div className="bg-gray-200 rounded h-3 w-1/2" />
+                                    <div className="bg-gray-100 rounded h-3 mb-2 w-full" />
+                                    <div className="bg-gray-100 rounded h-3 w-2/3" />
                                 </div>
                             </div>
                         ))}
                     </div>
-                ) : filtered.length === 0 ? (
-                    <div className="text-center py-20">
-                        <p className="text-4xl mb-3">🔍</p>
-                        <p className="text-gray-500 font-medium">No products found</p>
-                        <p className="text-gray-400 text-sm mt-1">Try a different search or category</p>
+                ) : products.length === 0 ? (
+                    <div className="text-center py-24">
+                        <Package size={48} className="mx-auto text-gray-200 mb-4" />
+                        <p className="text-gray-500 font-medium">No products yet</p>
+                        <p className="text-gray-400 text-sm mt-1">Check back soon — suppliers are onboarding now</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                        {filtered.map(product => (
-                            <div key={product.id}
-                                onClick={() => handleProductClick(product.id)}
-                                className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all group cursor-pointer">
-                                {/* Image */}
-                                <div className="relative h-44 bg-gray-50 overflow-hidden">
-                                    {product.images?.[0] ? (
-                                        <img src={product.images[0]} alt={product.name}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
-                                    )}
-                                    {product.stock <= 10 && product.stock > 0 && (
-                                        <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                                            Only {product.stock} left
-                                        </span>
-                                    )}
-                                    {product.stock === 0 && (
-                                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                                            <span className="text-gray-500 text-xs font-bold">Out of Stock</span>
-                                        </div>
-                                    )}
-                                </div>
+                    <>
+                        <Carousel title="New Arrivals" items={newArrivals} />
 
-                                {/* Info */}
-                                <div className="p-3">
-                                    <p className="text-xs text-gray-400 mb-1 truncate">{product.supplier_profiles?.business_name || 'Verified Supplier'}</p>
-                                    <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mb-2">{product.name}</h4>
-
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[#143D59] font-black text-base">₹{calcPrice(product).toLocaleString()}</p>
-                                            <p className="text-gray-400 text-xs line-through">₹{Math.ceil(product.supplier_price * 1.5).toLocaleString()}</p>
-                                        </div>
-                                        <div className="flex items-center gap-0.5 text-yellow-400">
-                                            <Star size={12} fill="currentColor" />
-                                            <span className="text-xs text-gray-500">4.5</span>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={e => { e.stopPropagation(); handleProductClick(product.id) }}
-                                        className="w-full mt-3 bg-[#F5B41A] text-[#143D59] text-xs font-bold py-2 rounded-xl hover:bg-[#e0a218] transition-all">
-                                        {user ? 'View Product' : 'Login to View'}
-                                    </button>
-                                </div>
+                        {/* Shop by Category */}
+                        <div className="mb-10">
+                            <div className="flex items-center justify-between mb-5">
+                                <h2 className="text-xl font-bold text-[#143D59]">Shop by Category</h2>
+                                <button className="text-sm text-[#143D59] font-medium hover:underline">
+                                    View All Categories
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                            <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                                {CATEGORIES.map(cat => (
+                                    <button key={cat.name}
+                                        onClick={() => setCategory(cat.name === category ? 'All' : cat.name)}
+                                        className="flex flex-col items-center gap-2">
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl border-2 transition-all
+                                            ${category === cat.name
+                                                ? 'border-[#143D59] bg-[#143D59]/5'
+                                                : 'border-gray-100 bg-gray-50 hover:border-gray-200'}`}>
+                                            {cat.emoji}
+                                        </div>
+                                        <span className="text-[11px] text-gray-600 font-medium text-center leading-tight">{cat.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <Carousel title="Best Sellers" items={bestSellers} />
+                        <Carousel title="Trending Products" items={trending} />
+                        {products.length >= 9 && <HotNewArrivals items={products.slice(0, 9)} />}
+                    </>
                 )}
             </div>
 
+            {/* Newsletter */}
+            <div className="border-t border-gray-100 py-12 bg-gray-50">
+                <div className="max-w-xl mx-auto px-4 text-center">
+                    <h3 className="text-xl font-bold text-[#143D59] mb-2">Subscribe To Our Newsletter</h3>
+                    <p className="text-gray-400 text-sm mb-6">Get updates on new products, suppliers and platform news</p>
+                    <div className="flex gap-3">
+                        <input type="email" placeholder="Your email address"
+                            className="flex-1 border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[#143D59] text-gray-800" />
+                        <button className="bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2.5 hover:bg-[#e0a218] transition-all text-sm">
+                            Subscribe
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Footer */}
-            <footer className="bg-[#143D59] mt-12 py-10">
+            <footer className="bg-white border-t border-gray-100 py-12">
                 <div className="max-w-7xl mx-auto px-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                        <div className="col-span-2 md:col-span-1">
-                            <h3 className="text-white text-xl font-black mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                Drop<span className="text-[#F5B41A]">spot.</span>
-                            </h3>
-                            <p className="text-white/40 text-xs leading-relaxed">
-                                India's stockless B2B2C marketplace.
-                            </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-7 h-7 bg-[#143D59] rounded-lg flex items-center justify-center">
+                                    <ShoppingBag size={13} className="text-[#F5B41A]" />
+                                </div>
+                                <span className="text-[#143D59] text-lg font-black">DROP<span className="text-[#F5B41A]">SPOT</span></span>
+                            </div>
+                            <div className="space-y-1.5 text-sm text-gray-500">
+                                <p>Monday-Friday: 08am-9pm</p>
+                                <p>+(91) 78923 04194</p>
+                                <p>support@dropspot.in</p>
+                            </div>
                         </div>
                         <div>
-                            <p className="text-white font-semibold text-xs mb-3 uppercase tracking-wider">Platform</p>
+                            <p className="font-bold text-[#143D59] text-sm mb-4">About Us</p>
                             <div className="space-y-2">
-                                {['How it works', 'Categories', 'Pricing'].map(item => (
-                                    <p key={item} className="text-white/40 text-xs hover:text-white cursor-pointer transition-colors">{item}</p>
+                                {['How Dropspot Works', 'Supplier Terms', 'Privacy Policy', 'Terms of Service', 'Contact Us'].map(item => (
+                                    <p key={item} className="text-sm text-gray-500 hover:text-[#143D59] cursor-pointer transition-colors">{item}</p>
                                 ))}
                             </div>
                         </div>
                         <div>
-                            <p className="text-white font-semibold text-xs mb-3 uppercase tracking-wider">Sellers</p>
+                            <p className="font-bold text-[#143D59] text-sm mb-4">Customer Support</p>
                             <div className="space-y-2">
-                                {['Shopify Sellers', 'Influencers', 'WhatsApp Sellers'].map(item => (
-                                    <p key={item} className="text-white/40 text-xs hover:text-white cursor-pointer transition-colors">{item}</p>
+                                {['Help Centre', 'Returns & Exchanges', 'Shipping Policy', 'Refund Policy', 'Order Tracking'].map(item => (
+                                    <p key={item} className="text-sm text-gray-500 hover:text-[#143D59] cursor-pointer transition-colors">{item}</p>
                                 ))}
                             </div>
                         </div>
                         <div>
-                            <p className="text-white font-semibold text-xs mb-3 uppercase tracking-wider">Company</p>
-                            <div className="space-y-2">
-                                {['About Us', 'Contact', 'Privacy Policy', 'Terms'].map(item => (
-                                    <p key={item} className="text-white/40 text-xs hover:text-white cursor-pointer transition-colors">{item}</p>
+                            <p className="font-bold text-[#143D59] text-sm mb-4">Follow Us</p>
+                            <div className="flex gap-2 mb-5">
+                                {['f', 'in', 'ig', 'li'].map((s, i) => (
+                                    <button key={i} className="w-8 h-8 bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 hover:bg-[#143D59] hover:text-white transition-all">
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="font-bold text-[#143D59] text-sm mb-3">We Accept</p>
+                            <div className="flex gap-2 flex-wrap">
+                                {['VISA', 'MC', 'UPI', 'PayPal'].map(card => (
+                                    <span key={card} className="text-xs bg-gray-100 text-gray-500 px-2 py-1 font-medium">{card}</span>
                                 ))}
                             </div>
                         </div>
                     </div>
-                    <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-                        <p className="text-white/30 text-xs">© 2025 Dropspot. All rights reserved.</p>
-                        <a href="/seller-console" className="text-white/30 text-xs hover:text-white transition-colors">
+                    <div className="border-t border-gray-100 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
+                        <p className="text-xs text-gray-400">© 2025 Dropspot. All rights reserved.</p>
+                        <a href="/seller-console" className="text-xs text-gray-400 hover:text-[#143D59] transition-colors">
                             Supplier Console →
                         </a>
                     </div>
