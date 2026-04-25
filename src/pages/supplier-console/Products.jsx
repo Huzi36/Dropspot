@@ -26,12 +26,14 @@ const EMPTY_FORM = {
     variant_options: [],
     variants: [],
     payment_type: 'prepaid_cod',
+    warehouse_id: '',
 }
 
 export default function SupplierProducts() {
     const { profile } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [products, setProducts] = useState([])
+    const [warehouses, setWarehouses] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [editProduct, setEditProduct] = useState(null)
@@ -61,6 +63,14 @@ export default function SupplierProducts() {
                     .eq('supplier_id', sp.id)
                     .order('created_at', { ascending: false })
                 setProducts(data || [])
+
+                const { data: wh } = await supabase
+                    .from('warehouses')
+                    .select('*')
+                    .eq('supplier_id', sp.id)
+                    .eq('is_active', true)
+                    .order('is_default', { ascending: false })
+                setWarehouses(wh || [])
             }
         } finally {
             setLoading(false)
@@ -69,7 +79,8 @@ export default function SupplierProducts() {
 
     function openAddModal() {
         setEditProduct(null)
-        setForm(EMPTY_FORM)
+        const defaultWh = warehouses.find(w => w.is_default)
+        setForm({ ...EMPTY_FORM, warehouse_id: defaultWh?.id || '' })
         setVariantInputs({})
         setError('')
         setShowModal(true)
@@ -96,6 +107,7 @@ export default function SupplierProducts() {
             variant_options: product.variant_options || [],
             variants: product.variants || [],
             payment_type: product.payment_type || 'prepaid_cod',
+            warehouse_id: product.warehouse_id || '',
         })
         setVariantInputs({})
         setError('')
@@ -112,7 +124,6 @@ export default function SupplierProducts() {
         setForm({ ...form, bullet_points: updated })
     }
 
-    // Generate all combinations from options
     function generateCombinations(options) {
         const validOptions = options.filter(o => (o.values || []).length > 0)
         if (validOptions.length === 0) return []
@@ -142,8 +153,7 @@ export default function SupplierProducts() {
 
     function removeOption(optIdx) {
         const updated = form.variant_options.filter((_, i) => i !== optIdx)
-        const combos = generateCombinations(updated)
-        setForm({ ...form, variant_options: updated, variants: combos })
+        setForm({ ...form, variant_options: updated, variants: generateCombinations(updated) })
     }
 
     function updateOptionName(optIdx, name) {
@@ -162,15 +172,13 @@ export default function SupplierProducts() {
         if (!value.trim()) return
         const updated = [...form.variant_options]
         updated[optIdx] = { ...updated[optIdx], values: [...(updated[optIdx].values || []), value.trim()] }
-        const combos = generateCombinations(updated)
-        setForm({ ...form, variant_options: updated, variants: combos })
+        setForm({ ...form, variant_options: updated, variants: generateCombinations(updated) })
     }
 
     function removeValueFromOption(optIdx, valIdx) {
         const updated = [...form.variant_options]
         updated[optIdx].values = updated[optIdx].values.filter((_, i) => i !== valIdx)
-        const combos = generateCombinations(updated)
-        setForm({ ...form, variant_options: updated, variants: combos })
+        setForm({ ...form, variant_options: updated, variants: generateCombinations(updated) })
     }
 
     function handleVariantChange(i, field, value) {
@@ -251,6 +259,7 @@ export default function SupplierProducts() {
                 variant_options: form.has_variants ? form.variant_options : [],
                 variants: form.has_variants ? form.variants : [],
                 payment_type: form.payment_type,
+                warehouse_id: form.warehouse_id || null,
                 supplier_id: supplierProfile.id,
                 is_active: true,
             }
@@ -420,6 +429,53 @@ export default function SupplierProducts() {
                                             ))}
                                         </div>
                                     </div>
+
+                                    {/* Warehouse Selection */}
+                                    <div>
+                                        <label className="text-gray-700 text-sm font-medium mb-1 block">
+                                            Pickup Warehouse
+                                            <span className="text-gray-400 font-normal ml-2 text-xs">— where should Shiprocket pick this up from?</span>
+                                        </label>
+                                        {warehouses.length === 0 ? (
+                                            <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                                <span className="text-xl">⚠️</span>
+                                                <div>
+                                                    <p className="text-sm font-medium text-amber-800">No warehouses added yet</p>
+                                                    <p className="text-xs text-amber-600 mt-0.5">
+                                                        Go to <a href="/seller-console/account" className="underline font-semibold">Account → Warehouses</a> to add a pickup location first
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {warehouses.map(wh => (
+                                                    <button key={wh.id} type="button"
+                                                        onClick={() => setForm({ ...form, warehouse_id: wh.id })}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${form.warehouse_id === wh.id
+                                                            ? 'border-[#143D59] bg-[#143D59]/5'
+                                                            : 'border-gray-100 hover:border-gray-200 bg-gray-50'}`}>
+                                                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-base ${form.warehouse_id === wh.id ? 'bg-[#143D59] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                                                            🏭
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-sm font-semibold text-gray-800">{wh.name}</p>
+                                                                {wh.is_default && (
+                                                                    <span className="text-[10px] bg-[#143D59] text-white px-1.5 py-0.5 rounded font-semibold">Default</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-gray-400 mt-0.5 truncate">
+                                                                {wh.city}{wh.state ? `, ${wh.state}` : ''} · {wh.contact_name || 'No contact set'}
+                                                            </p>
+                                                        </div>
+                                                        {form.warehouse_id === wh.id && (
+                                                            <span className="text-[#143D59] font-bold flex-shrink-0">✓</span>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -487,7 +543,7 @@ export default function SupplierProducts() {
                                 </div>
                             </div>
 
-                            {/* 4. VARIANTS - Shopify Style */}
+                            {/* 4. VARIANTS */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Variants</h4>
                                 <div className="space-y-4">
@@ -504,17 +560,14 @@ export default function SupplierProducts() {
 
                                     {form.has_variants && (
                                         <div className="space-y-4">
-                                            {/* Option Rows */}
                                             {form.variant_options.map((option, optIdx) => (
                                                 <div key={optIdx} className="border border-gray-200 rounded-2xl p-5">
                                                     <div className="flex items-center justify-between mb-4">
                                                         <p className="text-sm font-bold text-[#143D59]">Option {optIdx + 1}</p>
-                                                        <button onClick={() => removeOption(optIdx)} className="text-red-400 hover:text-red-600 transition-colors">
+                                                        <button onClick={() => removeOption(optIdx)} className="text-red-400 hover:text-red-600">
                                                             <X size={16} />
                                                         </button>
                                                     </div>
-
-                                                    {/* Option Name */}
                                                     <div className="mb-4">
                                                         <label className="text-xs text-gray-500 font-medium mb-1 block">Option Name</label>
                                                         <select value={option.name} onChange={e => updateOptionName(optIdx, e.target.value)}
@@ -528,28 +581,20 @@ export default function SupplierProducts() {
                                                                 placeholder="Enter custom option name" />
                                                         )}
                                                     </div>
-
-                                                    {/* Option Values */}
                                                     <div>
                                                         <label className="text-xs text-gray-500 font-medium mb-2 block">
                                                             Values {option.values?.length > 0 && <span className="text-gray-400">({option.values.length} added)</span>}
                                                         </label>
-
-                                                        {/* Tags */}
                                                         {option.values?.length > 0 && (
                                                             <div className="flex flex-wrap gap-2 mb-3">
                                                                 {option.values.map((val, valIdx) => (
-                                                                    <span key={valIdx}
-                                                                        className="flex items-center gap-1.5 bg-[#143D59] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                                                                    <span key={valIdx} className="flex items-center gap-1.5 bg-[#143D59] text-white text-xs font-medium px-3 py-1.5 rounded-full">
                                                                         {val}
-                                                                        <button onClick={() => removeValueFromOption(optIdx, valIdx)}
-                                                                            className="hover:text-red-300 transition-colors ml-0.5">×</button>
+                                                                        <button onClick={() => removeValueFromOption(optIdx, valIdx)} className="hover:text-red-300 ml-0.5">×</button>
                                                                     </span>
                                                                 ))}
                                                             </div>
                                                         )}
-
-                                                        {/* Input */}
                                                         <div className="flex gap-2">
                                                             <input
                                                                 value={variantInputs[optIdx] || ''}
@@ -562,8 +607,7 @@ export default function SupplierProducts() {
                                                                     }
                                                                 }}
                                                                 placeholder={`e.g. ${option.name === 'Color' ? 'Red, Blue, Green' : option.name === 'Size' ? 'S, M, L, XL' : 'Add value'}`}
-                                                                className="flex-1 border border-gray-200 text-gray-900 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm"
-                                                            />
+                                                                className="flex-1 border border-gray-200 text-gray-900 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm" />
                                                             <button
                                                                 onClick={() => {
                                                                     addValueToOption(optIdx, variantInputs[optIdx] || '')
@@ -578,7 +622,6 @@ export default function SupplierProducts() {
                                                 </div>
                                             ))}
 
-                                            {/* Add Option Button */}
                                             {form.variant_options.length < 3 && (
                                                 <button onClick={addOption}
                                                     className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 font-medium hover:border-[#143D59] hover:text-[#143D59] transition-all flex items-center justify-center gap-2">
@@ -586,14 +629,11 @@ export default function SupplierProducts() {
                                                 </button>
                                             )}
 
-                                            {/* Generated Variants Table */}
                                             {form.variants.length > 0 && (
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <h5 className="font-semibold text-gray-700 text-sm">
-                                                            {form.variants.length} variant{form.variants.length > 1 ? 's' : ''} — set price, stock & image per variant
-                                                        </h5>
-                                                    </div>
+                                                    <h5 className="font-semibold text-gray-700 text-sm mb-3">
+                                                        {form.variants.length} variant{form.variants.length > 1 ? 's' : ''} — set price, stock & image per variant
+                                                    </h5>
                                                     <div className="border border-gray-200 rounded-2xl overflow-hidden">
                                                         <table className="w-full">
                                                             <thead className="bg-gray-50 border-b border-gray-200">
@@ -606,10 +646,8 @@ export default function SupplierProducts() {
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-100">
                                                                 {form.variants.map((variant, i) => (
-                                                                    <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                                                        <td className="px-4 py-3">
-                                                                            <span className="text-sm font-semibold text-gray-800">{variant.name}</span>
-                                                                        </td>
+                                                                    <tr key={i} className="hover:bg-gray-50">
+                                                                        <td className="px-4 py-3"><span className="text-sm font-semibold text-gray-800">{variant.name}</span></td>
                                                                         <td className="px-4 py-3">
                                                                             <input type="number" value={variant.price}
                                                                                 onChange={e => handleVariantChange(i, 'price', e.target.value)}
