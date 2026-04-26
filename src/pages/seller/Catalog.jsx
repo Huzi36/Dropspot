@@ -13,6 +13,8 @@ export default function SellerCatalog() {
     const [loading, setLoading] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [sellerPrices, setSellerPrices] = useState({})
+    const [addedProducts, setAddedProducts] = useState({})
+    const [adding, setAdding] = useState({})
 
     useEffect(() => { if (profile?.id) fetchData() }, [profile?.id])
 
@@ -35,6 +37,16 @@ export default function SellerCatalog() {
                 const cats = ['All', ...new Set(prods.map(p => p.category).filter(Boolean))]
                 setCategories(cats)
             }
+
+            const { data: sellerProds } = await supabase
+                .from('seller_products')
+                .select('product_id')
+                .eq('seller_id', profile.id)
+            if (sellerProds) {
+                const added = {}
+                sellerProds.forEach(sp => added[sp.product_id] = true)
+                setAddedProducts(added)
+            }
         } finally {
             setLoading(false)
         }
@@ -48,6 +60,26 @@ export default function SellerCatalog() {
 
     function calcCustomerPrice(product, sellerProfit) {
         return calcCostPrice(product) + (parseFloat(sellerProfit) || 0)
+    }
+
+    async function addToStore(product) {
+        if (addedProducts[product.id]) return
+        setAdding(prev => ({ ...prev, [product.id]: true }))
+        try {
+            const profit = parseFloat(sellerPrices[product.id]) || 0
+            const sellingPrice = calcCostPrice(product) + profit
+            const { error } = await supabase.from('seller_products').insert({
+                seller_id: profile.id,
+                product_id: product.id,
+                selling_price: sellingPrice,
+                is_active: true
+            })
+            if (!error) {
+                setAddedProducts(prev => ({ ...prev, [product.id]: true }))
+            }
+        } finally {
+            setAdding(prev => ({ ...prev, [product.id]: false }))
+        }
     }
 
     return (
@@ -103,9 +135,15 @@ export default function SellerCatalog() {
                             <div key={product.id} className="bg-white rounded-2xl border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden group">
                                 <div className="relative h-52 bg-gray-50 overflow-hidden">
                                     {product.images?.[0] ? (
-                                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                        <img src={product.images[0]} alt={product.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-6xl">📦</div>
+                                    )}
+                                    {addedProducts[product.id] && (
+                                        <span className="absolute top-3 right-3 bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                            ✓ Added
+                                        </span>
                                     )}
                                     {product.category && (
                                         <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-[#143D59] text-xs font-semibold px-3 py-1 rounded-full">
@@ -134,8 +172,9 @@ export default function SellerCatalog() {
                                         <input type="number" min="0" placeholder="e.g. 200"
                                             value={sellerPrices[product.id] || ''}
                                             onChange={e => setSellerPrices(prev => ({ ...prev, [product.id]: e.target.value }))}
-                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800" />
-                                        {sellerPrices[product.id] && (
+                                            disabled={addedProducts[product.id]}
+                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800 disabled:bg-gray-50 disabled:text-gray-400" />
+                                        {sellerPrices[product.id] && !addedProducts[product.id] && (
                                             <div className="flex justify-between text-xs mt-2 font-semibold">
                                                 <span className="text-gray-500">Customer pays</span>
                                                 <span className="text-green-600">₹{calcCustomerPrice(product, sellerPrices[product.id]).toFixed(2)}</span>
@@ -148,9 +187,16 @@ export default function SellerCatalog() {
                                             {(product.stock || 0) > 0 ? `${product.stock} in stock` : 'Out of stock'}
                                         </span>
                                     </div>
-                                    <button disabled={(product.stock || 0) === 0}
-                                        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${(product.stock || 0) === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] hover:shadow-md'}`}>
-                                        {(product.stock || 0) === 0 ? 'Out of Stock' : '+ Add to My Store'}
+                                    <button
+                                        onClick={() => addToStore(product)}
+                                        disabled={addedProducts[product.id] || (product.stock || 0) === 0 || adding[product.id]}
+                                        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${addedProducts[product.id]
+                                                ? 'bg-green-50 text-green-600 cursor-default'
+                                                : (product.stock || 0) === 0
+                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] hover:shadow-md'
+                                            }`}>
+                                        {adding[product.id] ? 'Adding...' : addedProducts[product.id] ? '✓ Added to Store' : (product.stock || 0) === 0 ? 'Out of Stock' : '+ Add to My Store'}
                                     </button>
                                 </div>
                             </div>
