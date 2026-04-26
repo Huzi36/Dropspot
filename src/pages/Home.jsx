@@ -115,14 +115,14 @@ export default function Home() {
         const discount = Math.round(((mrp - price) / mrp) * 100)
         return (
             <div onClick={() => navigate(`/product/${product.id}`)}
-                className="cursor-pointer group flex-shrink-0 border border-gray-100 hover:shadow-md transition-all duration-200 bg-white"
-                style={{ width: 'calc(50vw - 20px)', maxWidth: '160px' }}>
-                <div className="relative overflow-hidden bg-gray-50" style={{ height: '160px' }}>
+                className="cursor-pointer group flex-shrink-0 border-r border-gray-100 hover:bg-gray-50 transition-all duration-200 bg-white"
+                style={{ width: '180px' }}>
+                <div className="relative overflow-hidden bg-gray-50" style={{ height: '180px' }}>
                     {product.images?.[0] ? (
                         <img src={product.images[0]} alt={product.name}
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                        <div className="w-full h-full flex items-center justify-center">
                             <Package size={32} className="text-gray-200" />
                         </div>
                     )}
@@ -154,7 +154,7 @@ export default function Home() {
     function Carousel({ title, items }) {
         const scrollRef = useRef(null)
         function scroll(dir) {
-            if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 320, behavior: 'smooth' })
+            if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 360, behavior: 'smooth' })
         }
         if (items.length === 0) return null
         return (
@@ -169,23 +169,16 @@ export default function Home() {
                         <ChevronLeft size={16} className="text-gray-600" />
                     </button>
                     <div ref={scrollRef}
-                        className="flex gap-0 overflow-x-auto border border-gray-100"
+                        className="flex overflow-x-auto border border-gray-100"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                        {items.map((product, i) => (
-                            <div key={product.id} className={i > 0 ? 'border-l border-gray-100' : ''}>
-                                <ProductCard product={product} />
-                            </div>
+                        {items.map(product => (
+                            <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
                     <button onClick={() => scroll(1)}
                         className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-8 h-8 bg-white border border-gray-200 rounded-full items-center justify-center shadow-sm">
                         <ChevronRight size={16} className="text-gray-600" />
                     </button>
-                </div>
-                <div className="flex items-center justify-center gap-1.5 mt-3">
-                    <button className="w-5 h-1 bg-[#143D59] rounded-full" />
-                    <button className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
-                    <button className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
                 </div>
             </div>
         )
@@ -251,10 +244,10 @@ export default function Home() {
                     </button>
                 </div>
                 {searching ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-0 border border-gray-100">
+                    <div className="flex border border-gray-100">
                         {[...Array(4)].map((_, i) => (
-                            <div key={i} className="animate-pulse border-r border-gray-100 last:border-0">
-                                <div className="bg-gray-100 h-40" />
+                            <div key={i} className="animate-pulse border-r border-gray-100" style={{ width: '180px' }}>
+                                <div className="bg-gray-100" style={{ height: '180px' }} />
                                 <div className="p-2.5">
                                     <div className="bg-gray-100 rounded h-3 mb-2" />
                                     <div className="bg-gray-100 rounded h-3 w-2/3" />
@@ -266,16 +259,12 @@ export default function Home() {
                     <div className="text-center py-16 bg-gray-50 rounded-2xl">
                         <Package size={40} className="mx-auto text-gray-200 mb-3" />
                         <p className="text-gray-500 font-medium text-sm">No products found for "{search}"</p>
-                        <button onClick={clearSearch} className="mt-3 bg-[#F5B41A] text-[#143D59] font-bold px-5 py-2 rounded-lg text-sm">
-                            Browse All
-                        </button>
+                        <button onClick={clearSearch} className="mt-3 bg-[#F5B41A] text-[#143D59] font-bold px-5 py-2 rounded-lg text-sm">Browse All</button>
                     </div>
                 ) : (
-                    <div className="flex flex-wrap gap-0 border border-gray-100">
-                        {searchResults.map((product) => (
-                            <div key={product.id} className="border-r border-b border-gray-100">
-                                <ProductCard product={product} />
-                            </div>
+                    <div className="flex flex-wrap border border-gray-100">
+                        {searchResults.map(product => (
+                            <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
                 )}
@@ -287,13 +276,13 @@ export default function Home() {
         <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-            {/* Announcement Bar */}
+            {/* Announcement */}
             <div className="bg-[#143D59] text-white text-xs text-center py-2 px-4">
                 Customer access coming soon — Currently onboarding sellers & suppliers.{' '}
                 <Link to="/signup" className="text-[#F5B41A] font-semibold underline ml-1">Join free →</Link>
             </div>
 
-            {/* Top Navbar */}
+            {/* Navbar */}
             <div className="border-b border-gray-100 bg-white">
                 <div className="max-w-7xl mx-auto px-3 md:px-4">
                     <div className="flex items-center gap-3 h-14 md:h-16">
@@ -381,38 +370,38 @@ export default function Home() {
                 </div>
             </div>
 
-            {search ? (
-                <SearchResults />
-            ) : (
+            {search ? <SearchResults /> : (
                 <>
-                    {/* Hero Banner */}
-                    <div className="w-full" style={{ height: '380px', minHeight: '380px', background: '#143D59', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center' }}>
-                            <div style={{ padding: '0 48px', maxWidth: '560px' }}>
-                                <span style={{ display: 'inline-block', background: '#F5B41A', color: '#143D59', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    New Arrivals
-                                </span>
-                                <h1 style={{ fontSize: 'clamp(28px, 5vw, 56px)', fontWeight: 900, color: 'white', lineHeight: 1.1, marginBottom: '12px' }}>
-                                    Sell Without<br />Holding Stock
-                                </h1>
-                                <p style={{ color: '#93c5fd', fontSize: '14px', marginBottom: '24px' }}>
-                                    Browse verified Indian suppliers. Set your price.
-                                </p>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <Link to="/signup" style={{ background: '#F5B41A', color: '#143D59', fontWeight: 700, padding: '10px 24px', fontSize: '14px', textDecoration: 'none' }}>
-                                        Start Selling Free
-                                    </Link>
-                                    <button onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                        style={{ background: 'white', color: '#143D59', fontWeight: 600, padding: '10px 24px', fontSize: '14px', border: '1px solid #e5e7eb', cursor: 'pointer' }}>
-                                        Browse
-                                    </button>
+                    {/* Hero */}
+                    <div className="max-w-7xl mx-auto px-3 md:px-4 py-3">
+                        <div style={{ background: '#143D59', borderRadius: '16px', position: 'relative', overflow: 'hidden', height: '300px' }}>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 40px' }}>
+                                <div style={{ maxWidth: '500px' }}>
+                                    <span style={{ display: 'inline-block', background: '#F5B41A', color: '#143D59', fontSize: '10px', fontWeight: 700, padding: '2px 10px', borderRadius: '999px', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        New Arrivals
+                                    </span>
+                                    <h1 style={{ fontSize: 'clamp(24px, 4vw, 48px)', fontWeight: 900, color: 'white', lineHeight: 1.1, marginBottom: '10px' }}>
+                                        Sell Without<br />Holding Stock
+                                    </h1>
+                                    <p style={{ color: '#93c5fd', fontSize: '13px', marginBottom: '20px' }}>
+                                        Browse verified Indian suppliers. Set your price.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <Link to="/signup" style={{ background: '#F5B41A', color: '#143D59', fontWeight: 700, padding: '9px 20px', fontSize: '13px', textDecoration: 'none', borderRadius: '4px' }}>
+                                            Start Selling Free
+                                        </Link>
+                                        <button onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                            style={{ background: 'white', color: '#143D59', fontWeight: 600, padding: '9px 20px', fontSize: '13px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                                            Browse
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px' }}>
-                            {[0, 1, 2].map(i => (
-                                <div key={i} style={{ borderRadius: '999px', background: i === 0 ? 'white' : 'rgba(255,255,255,0.3)', width: i === 0 ? '16px' : '6px', height: '4px' }} />
-                            ))}
+                            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px' }}>
+                                {[0, 1, 2].map(i => (
+                                    <div key={i} style={{ borderRadius: '999px', background: i === 0 ? 'white' : 'rgba(255,255,255,0.3)', width: i === 0 ? '16px' : '6px', height: '4px' }} />
+                                ))}
+                            </div>
                         </div>
                     </div>
 
@@ -434,13 +423,13 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* Main Content */}
+                    {/* Products */}
                     <div id="products-section" className="max-w-7xl mx-auto px-3 md:px-4 py-6 md:py-8">
                         {loading ? (
-                            <div className="flex gap-0 overflow-hidden mb-8 border border-gray-100">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="flex-shrink-0 animate-pulse border-r border-gray-100 last:border-0" style={{ width: '160px' }}>
-                                        <div className="bg-gray-100" style={{ height: '160px' }} />
+                            <div className="flex border border-gray-100 mb-8">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="flex-shrink-0 animate-pulse border-r border-gray-100" style={{ width: '180px' }}>
+                                        <div className="bg-gray-100" style={{ height: '180px' }} />
                                         <div className="p-2.5">
                                             <div className="bg-gray-100 rounded h-3 mb-2 w-full" />
                                             <div className="bg-gray-100 rounded h-3 w-2/3" />
@@ -461,9 +450,7 @@ export default function Home() {
                                         <span className="text-xs text-gray-500">Showing:</span>
                                         <span className="flex items-center gap-1.5 bg-[#143D59] text-white text-xs font-medium px-2.5 py-1 rounded-full">
                                             {CATEGORIES.find(c => c.name === category)?.emoji} {category}
-                                            <button onClick={() => setCategory('All')} className="ml-1 hover:text-red-300">
-                                                <X size={11} />
-                                            </button>
+                                            <button onClick={() => setCategory('All')} className="ml-1 hover:text-red-300"><X size={11} /></button>
                                         </span>
                                         <span className="text-xs text-gray-400">({filteredProducts.length})</span>
                                     </div>
@@ -472,9 +459,7 @@ export default function Home() {
                                 <div className="mb-8">
                                     <div className="flex items-center justify-between mb-4">
                                         <h2 className="text-base md:text-xl font-bold text-[#143D59]">Shop by Category</h2>
-                                        {category !== 'All' && (
-                                            <button onClick={() => setCategory('All')} className="text-xs text-gray-500 hover:text-[#143D59]">Clear filter</button>
-                                        )}
+                                        {category !== 'All' && <button onClick={() => setCategory('All')} className="text-xs text-gray-500 hover:text-[#143D59]">Clear filter</button>}
                                     </div>
                                     <div className="grid grid-cols-4 md:grid-cols-8 gap-2 md:gap-4">
                                         {CATEGORIES.map(cat => (
