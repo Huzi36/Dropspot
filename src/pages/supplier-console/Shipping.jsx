@@ -18,26 +18,17 @@ export default function SupplierShipping() {
         pickup_state: '',
     })
 
-    useEffect(() => { fetchData() }, [])
-
-    async function fetchData() {
-        const { data: sp } = await supabase
-            .from('supplier_profiles')
-            .select('*')
-            .eq('user_id', profile?.id)
-            .single()
-
-        if (sp) {
-            setForm({
-                pickup_name: sp.pickup_name || profile?.full_name || '',
-                pickup_phone: sp.pickup_phone || profile?.phone?.replace('+91', '') || '',
-                pickup_address: sp.address || '',
-                pickup_city: sp.city || '',
-                pickup_pincode: sp.pincode || '',
-                pickup_state: sp.pickup_state || '',
-            })
+    useEffect(() => {
+        if (profile) {
+            setForm(prev => ({
+                ...prev,
+                pickup_name: profile.full_name || '',
+                pickup_phone: profile.phone?.replace('+91', '') || '',
+                pickup_city: profile.city || '',
+                pickup_pincode: profile.pincode || '',
+            }))
         }
-    }
+    }, [profile])
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value })
@@ -47,11 +38,10 @@ export default function SupplierShipping() {
         setSaving(true)
         setError('')
         try {
-            await supabase.from('supplier_profiles').update({
-                address: form.pickup_address,
+            await supabase.from('profiles').update({
                 city: form.pickup_city,
                 pincode: form.pickup_pincode,
-            }).eq('user_id', profile?.id)
+            }).eq('id', profile?.id)
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         } catch (err) {
@@ -71,19 +61,16 @@ export default function SupplierShipping() {
                     <p className="text-gray-500 mt-1">Manage your pickup address for Shiprocket.</p>
                 </div>
 
-                {/* Info Banner */}
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-6 flex gap-4">
                     <span className="text-2xl">🚚</span>
                     <div>
                         <p className="font-semibold text-blue-800 text-sm">How shipping works</p>
-                        <p className="text-blue-600 text-xs mt-1">Once a seller pays for an order, Dropspot notifies Shiprocket who will send a delivery partner to your pickup address. Make sure your address is accurate and complete.</p>
+                        <p className="text-blue-600 text-xs mt-1">Once a seller pays for an order, Dropspot notifies Shiprocket who will send a delivery partner to your pickup address.</p>
                     </div>
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-2xl">
-                    <h3 className="font-bold text-[#143D59] text-lg mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>
-                        📍 Pickup Address
-                    </h3>
+                    <h3 className="font-bold text-[#143D59] text-lg mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>📍 Pickup Address</h3>
 
                     {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">{error}</div>}
                     {saved && <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-6 text-sm">✅ Pickup address saved!</div>}
@@ -93,7 +80,7 @@ export default function SupplierShipping() {
                             <label className="text-gray-700 text-sm font-medium mb-1 block">Contact Name</label>
                             <input name="pickup_name" value={form.pickup_name} onChange={handleChange}
                                 className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59]"
-                                placeholder="Name of person at pickup location" />
+                                placeholder="Name of person at pickup" />
                         </div>
                         <div>
                             <label className="text-gray-700 text-sm font-medium mb-1 block">Contact Phone</label>

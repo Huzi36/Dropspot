@@ -210,17 +210,21 @@ export default function SupplierProducts() {
         try {
             const payload = {
                 name: form.name,
-                category: form.category,
+                category: form.category || null,
                 supplier_price: parseFloat(form.supplier_price),
+                price: parseFloat(form.supplier_price),
                 retail_price: parseFloat(form.retail_price) || null,
                 weight_grams: parseInt(form.weight_grams) || 0,
+                length: parseFloat(form.length) || null,
+                breadth: parseFloat(form.breadth) || null,
+                height: parseFloat(form.height) || null,
                 stock: form.has_variants
                     ? form.variants.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0)
                     : parseInt(form.stock) || 0,
-                sku: form.sku,
+                sku: form.sku || null,
                 bullet_points: form.bullet_points.filter(b => b.trim() !== ''),
-                long_description: form.long_description,
-                whats_included: form.whats_included,
+                long_description: form.long_description || null,
+                whats_included: form.whats_included || null,
                 images: form.images,
                 has_variants: form.has_variants,
                 variant_options: form.has_variants ? form.variant_options : [],
@@ -231,9 +235,11 @@ export default function SupplierProducts() {
                 is_active: true,
             }
             if (editProduct) {
-                await supabase.from('products').update(payload).eq('id', editProduct.id)
+                const { error } = await supabase.from('products').update(payload).eq('id', editProduct.id)
+                if (error) throw error
             } else {
-                await supabase.from('products').insert(payload)
+                const { error } = await supabase.from('products').insert(payload)
+                if (error) throw error
             }
             await fetchData()
             setShowModal(false)
@@ -509,8 +515,7 @@ export default function SupplierProducts() {
                                                             </div>
                                                         )}
                                                         <div className="flex gap-2">
-                                                            <input
-                                                                value={variantInputs[optIdx] || ''}
+                                                            <input value={variantInputs[optIdx] || ''}
                                                                 onChange={e => setVariantInputs(prev => ({ ...prev, [optIdx]: e.target.value }))}
                                                                 onKeyDown={e => {
                                                                     if (e.key === 'Enter') {

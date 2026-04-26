@@ -13,13 +13,12 @@ export default function SupplierLogin() {
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
-    async function handleSubmit(e) {
-        e.preventDefault()
+    async function handleSubmit() {
         setLoading(true)
         setError('')
         try {
             await signIn(form.email, form.password)
-            navigate('/seller-console/dashboard')
+            navigate('/supplier-console/dashboard')
         } catch (err) {
             setError(err.message)
         } finally {
@@ -31,7 +30,6 @@ export default function SupplierLogin() {
         <div className="min-h-screen bg-white flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
 
-            {/* Left Panel */}
             <div className="hidden lg:flex w-1/2 bg-[#143D59] flex-col justify-between p-12">
                 <div>
                     <h1 className="text-white text-3xl font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>
@@ -40,8 +38,7 @@ export default function SupplierLogin() {
                     <p className="text-[#F5B41A] text-sm mt-1">Supplier Console</p>
                 </div>
                 <div>
-                    <h2 className="text-white text-4xl font-black leading-tight mb-4"
-                        style={{ fontFamily: "'Syne', sans-serif" }}>
+                    <h2 className="text-white text-4xl font-black leading-tight mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>
                         Reach thousands<br />of sellers across<br />India.
                     </h2>
                     <p className="text-blue-200 text-lg">
@@ -49,11 +46,7 @@ export default function SupplierLogin() {
                     </p>
                 </div>
                 <div className="flex gap-8">
-                    {[
-                        { value: '1000+', label: 'Active Sellers' },
-                        { value: '₹0', label: 'Listing Fee' },
-                        { value: 'Fast', label: 'Payouts' },
-                    ].map((stat, i) => (
+                    {[{ value: '1000+', label: 'Active Sellers' }, { value: '₹0', label: 'Listing Fee' }, { value: 'Fast', label: 'Payouts' }].map((stat, i) => (
                         <div key={i}>
                             <p className="text-[#F5B41A] text-2xl font-bold">{stat.value}</p>
                             <p className="text-blue-200 text-sm">{stat.label}</p>
@@ -62,7 +55,6 @@ export default function SupplierLogin() {
                 </div>
             </div>
 
-            {/* Right Panel */}
             <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
                 <div className="w-full max-w-md">
                     <div className="lg:hidden mb-8">
@@ -76,35 +68,32 @@ export default function SupplierLogin() {
                     <p className="text-gray-500 mb-8">Log in to your supplier account</p>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">
-                            {error}
-                        </div>
+                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">{error}</div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-4">
                         <div>
                             <label className="text-gray-700 text-sm font-medium mb-1 block">Email</label>
-                            <input name="email" type="email" required value={form.email} onChange={handleChange}
-                                className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59] focus:border-transparent"
+                            <input name="email" type="email" value={form.email} onChange={handleChange}
+                                className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59]"
                                 placeholder="you@example.com" />
                         </div>
                         <div>
                             <label className="text-gray-700 text-sm font-medium mb-1 block">Password</label>
-                            <input name="password" type="password" required value={form.password} onChange={handleChange}
-                                className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59] focus:border-transparent"
+                            <input name="password" type="password" value={form.password} onChange={handleChange}
+                                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59]"
                                 placeholder="Your password" />
                         </div>
-                        <button type="submit" disabled={loading}
+                        <button onClick={handleSubmit} disabled={loading}
                             className="w-full bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] font-bold py-3 rounded-lg transition-all disabled:opacity-50">
                             {loading ? 'Logging in...' : 'Log In'}
                         </button>
-                    </form>
+                    </div>
 
                     <p className="text-gray-500 text-sm text-center mt-6">
                         New supplier?{' '}
-                        <Link to="/seller-console/signup" className="text-[#143D59] font-semibold hover:underline">
-                            Create an account
-                        </Link>
+                        <Link to="/supplier-console/signup" className="text-[#143D59] font-semibold hover:underline">Create an account</Link>
                     </p>
                     <p className="text-gray-400 text-xs text-center mt-3">
                         Are you a seller?{' '}
