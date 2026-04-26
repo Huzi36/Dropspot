@@ -12,11 +12,6 @@ export default function Product() {
     const [relatedProducts, setRelatedProducts] = useState([])
     const [supplierProducts, setSupplierProducts] = useState([])
     const [loading, setLoading] = useState(true)
-    const [sellerProfile, setSellerProfile] = useState(null)
-    const [added, setAdded] = useState(false)
-    const [adding, setAdding] = useState(false)
-    const [showProfitInput, setShowProfitInput] = useState(false)
-    const [profit, setProfit] = useState('')
     const [quantity, setQuantity] = useState(1)
     const [wishlisted, setWishlisted] = useState(false)
     const [selectedImage, setSelectedImage] = useState(0)
@@ -35,7 +30,7 @@ export default function Product() {
         try {
             const { data } = await supabase
                 .from('products')
-                .select('*, supplier_profiles(id, business_name, city)')
+                .select('*')
                 .eq('id', id)
                 .single()
             setProduct(data)
@@ -43,7 +38,7 @@ export default function Product() {
             if (data) {
                 const { data: related } = await supabase
                     .from('products')
-                    .select('*, supplier_profiles(business_name)')
+                    .select('*')
                     .eq('category', data.category)
                     .eq('is_active', true)
                     .neq('id', id)
@@ -52,7 +47,7 @@ export default function Product() {
 
                 const { data: fromSupplier } = await supabase
                     .from('products')
-                    .select('*, supplier_profiles(business_name)')
+                    .select('*')
                     .eq('supplier_id', data.supplier_id)
                     .eq('is_active', true)
                     .neq('id', id)
@@ -61,24 +56,6 @@ export default function Product() {
             }
 
             fetchQuestions()
-
-            if (user) {
-                const { data: sp } = await supabase
-                    .from('seller_profiles')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .single()
-                setSellerProfile(sp)
-                if (sp) {
-                    const { data: existing } = await supabase
-                        .from('seller_products')
-                        .select('id')
-                        .eq('seller_id', sp.id)
-                        .eq('product_id', id)
-                        .maybeSingle()
-                    setAdded(!!existing)
-                }
-            }
         } finally {
             setLoading(false)
         }
@@ -124,41 +101,19 @@ export default function Product() {
 
     function calcCostPrice() {
         if (!product) return 0
-        const margin = product.supplier_price * 0.1
-        const shipping = product.weight_grams <= 500 ? 82.50 : 110
-        return Math.ceil(product.supplier_price + margin + shipping)
-    }
-
-    function calcCustomerPrice() {
-        return calcCostPrice() + (parseFloat(profit) || 0)
+        const margin = (product.supplier_price || 0) * 0.1
+        const shipping = (product.weight_grams || 0) <= 500 ? 82.50 : 110
+        return Math.ceil((product.supplier_price || 0) + margin + shipping)
     }
 
     function calcPrice(p) {
-        const margin = p.supplier_price * 0.1
-        const shipping = p.weight_grams <= 500 ? 82.50 : 110
-        return Math.ceil(p.supplier_price + margin + shipping)
+        const margin = (p.supplier_price || 0) * 0.1
+        const shipping = (p.weight_grams || 0) <= 500 ? 82.50 : 110
+        return Math.ceil((p.supplier_price || 0) + margin + shipping)
     }
 
     function toggleSection(key) {
-        setOpenSections(prev =>
-            prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-        )
-    }
-
-    async function handleConfirmPush() {
-        if (!sellerProfile) return
-        setAdding(true)
-        try {
-            const { error } = await supabase.from('seller_products').insert({
-                seller_id: sellerProfile.id,
-                product_id: id,
-                selling_price: calcCustomerPrice() || calcCostPrice(),
-                is_active: true
-            })
-            if (!error) { setAdded(true); setShowProfitInput(false) }
-        } finally {
-            setAdding(false)
-        }
+        setOpenSections(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
     }
 
     if (loading) return (
@@ -177,7 +132,7 @@ export default function Product() {
     )
 
     const costPrice = calcCostPrice()
-    const mrp = product.retail_price || Math.ceil(product.supplier_price * 1.5)
+    const mrp = product.retail_price || Math.ceil((product.supplier_price || 0) * 1.5)
     const discount = Math.round(((mrp - costPrice) / mrp) * 100)
     const images = product.images?.length > 0 ? product.images : [null]
 
@@ -185,7 +140,6 @@ export default function Product() {
         <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-            {/* Navbar */}
             <div className="bg-[#143D59] text-white text-xs text-center py-2 px-4">
                 Customer access coming soon — Currently onboarding sellers & suppliers.{' '}
                 <Link to="/signup" className="text-[#F5B41A] font-semibold underline ml-1">Join free →</Link>
@@ -198,19 +152,12 @@ export default function Product() {
                     </Link>
                     <div className="flex items-center gap-4">
                         {user
-                            ? <Link to="/seller/dashboard" className="text-sm text-[#143D59] font-medium hover:underline">Dashboard</Link>
+                            ? <Link to="/dashboard" className="text-sm text-[#143D59] font-medium hover:underline">Dashboard</Link>
                             : <Link to="/login" className="text-sm text-[#143D59] font-medium hover:underline">Sign In</Link>}
                     </div>
                 </div>
             </div>
-            <div className="bg-[#143D59] h-10 flex items-center">
-                <div className="max-w-7xl mx-auto px-4 flex items-center gap-6">
-                    <Link to="/" className="text-white/70 text-sm hover:text-white">Home</Link>
-                    <Link to="/" className="text-white/70 text-sm hover:text-white">Shop</Link>
-                </div>
-            </div>
 
-            {/* Breadcrumb */}
             <div className="max-w-7xl mx-auto px-4 py-3">
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Link to="/" className="hover:text-[#143D59]">Home</Link>
@@ -223,11 +170,7 @@ export default function Product() {
 
             <div className="max-w-7xl mx-auto px-4 pb-16">
                 <div className="flex gap-10">
-
-                    {/* LEFT */}
                     <div className="flex-1 min-w-0">
-
-                        {/* Image Gallery */}
                         <div className="flex gap-4 mb-8">
                             <div className="flex flex-col gap-2">
                                 {images.map((img, i) => (
@@ -248,15 +191,14 @@ export default function Product() {
                             </div>
                         </div>
 
-                        {/* Bullet Points */}
                         {product.bullet_points?.length > 0 && (
                             <div className="mb-6">
-                                <h3 className="text-base font-bold text-[#143D59] mb-3">Bullet Points</h3>
+                                <h3 className="text-base font-bold text-[#143D59] mb-3">Key Features</h3>
                                 <ul className="space-y-1.5">
                                     {product.bullet_points.map((point, i) => (
                                         <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
                                             <span className="text-gray-400 mt-0.5">·</span>
-                                            <span dangerouslySetInnerHTML={{ __html: point }} />
+                                            <span>{point}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -264,35 +206,26 @@ export default function Product() {
                         )}
 
                         <div className="divide-y divide-gray-100">
-
-                            {/* Description */}
                             {product.long_description && (
                                 <div>
-                                    <button onClick={() => toggleSection('description')}
-                                        className="w-full flex items-center justify-between py-4 text-left">
+                                    <button onClick={() => toggleSection('description')} className="w-full flex items-center justify-between py-4 text-left">
                                         <span className="font-semibold text-[#143D59]">Description</span>
                                         {openSections.includes('description') ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
                                     </button>
                                     {openSections.includes('description') && (
-                                        <div className="pb-6 prose prose-sm max-w-none text-gray-600"
-                                            dangerouslySetInnerHTML={{ __html: product.long_description }} />
+                                        <div className="pb-6 prose prose-sm max-w-none text-gray-600" dangerouslySetInnerHTML={{ __html: product.long_description }} />
                                     )}
                                 </div>
                             )}
 
-                            {/* What's Included */}
                             <div>
-                                <button onClick={() => toggleSection('whats_included')}
-                                    className="w-full flex items-center justify-between py-4 text-left">
+                                <button onClick={() => toggleSection('whats_included')} className="w-full flex items-center justify-between py-4 text-left">
                                     <span className="font-semibold text-[#143D59]">What's Included</span>
                                     {openSections.includes('whats_included') ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
                                 </button>
                                 {openSections.includes('whats_included') && (
                                     <div className="pb-6 space-y-1.5">
-                                        {(product.whats_included
-                                            ? product.whats_included.split('\n').filter(Boolean)
-                                            : ['1x Product as shown', 'Packaging box']
-                                        ).map((item, i) => (
+                                        {(product.whats_included ? product.whats_included.split('\n').filter(Boolean) : ['1x Product as shown', 'Packaging box']).map((item, i) => (
                                             <p key={i} className="text-sm text-gray-600 flex items-center gap-2">
                                                 <span className="text-green-500">✓</span> {item}
                                             </p>
@@ -301,17 +234,15 @@ export default function Product() {
                                 )}
                             </div>
 
-                            {/* Q&A */}
                             <div>
-                                <button onClick={() => toggleSection('qa')}
-                                    className="w-full flex items-center justify-between py-4 text-left">
+                                <button onClick={() => toggleSection('qa')} className="w-full flex items-center justify-between py-4 text-left">
                                     <span className="font-semibold text-[#143D59]">Questions and Answers</span>
                                     {openSections.includes('qa') ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
                                 </button>
                                 {openSections.includes('qa') && (
                                     <div className="pb-6">
                                         {questions.length === 0 ? (
-                                            <p className="text-sm text-gray-400 mb-6">There are no questions for this product yet.</p>
+                                            <p className="text-sm text-gray-400 mb-6">No questions yet.</p>
                                         ) : (
                                             <div className="space-y-4 mb-6">
                                                 {questions.map(q => (
@@ -336,127 +267,67 @@ export default function Product() {
                                         {qSubmitted ? (
                                             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                                                 <p className="text-green-700 font-medium text-sm">✅ Question submitted!</p>
-                                                <p className="text-green-600 text-xs mt-1">The supplier will answer soon.</p>
                                             </div>
                                         ) : (
-                                            <div>
-                                                <h4 className="font-semibold text-[#143D59] mb-1">Ask A Question</h4>
-                                                <p className="text-xs text-gray-400 mb-4">Your email address will not be published. Required fields are marked *</p>
-                                                <div className="space-y-3">
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-600 mb-1 block">Your question *</label>
-                                                        <textarea value={qaForm.question}
-                                                            onChange={e => setQaForm(prev => ({ ...prev, question: e.target.value }))}
-                                                            rows={4}
-                                                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800 resize-none"
-                                                            placeholder="Type your question here..." />
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Name *</label>
-                                                            <input value={qaForm.name}
-                                                                onChange={e => setQaForm(prev => ({ ...prev, name: e.target.value }))}
-                                                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
-                                                                placeholder="Your name" />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Email</label>
-                                                            <input type="email" value={qaForm.email}
-                                                                onChange={e => setQaForm(prev => ({ ...prev, email: e.target.value }))}
-                                                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
-                                                                placeholder="your@email.com" />
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={submitQuestion} disabled={submittingQ}
-                                                        className="bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2.5 rounded-lg hover:bg-[#e0a218] transition-all disabled:opacity-50 text-sm">
-                                                        {submittingQ ? 'Submitting...' : 'Submit'}
-                                                    </button>
+                                            <div className="space-y-3">
+                                                <h4 className="font-semibold text-[#143D59]">Ask A Question</h4>
+                                                <textarea value={qaForm.question} onChange={e => setQaForm(prev => ({ ...prev, question: e.target.value }))} rows={4}
+                                                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800 resize-none"
+                                                    placeholder="Type your question here..." />
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input value={qaForm.name} onChange={e => setQaForm(prev => ({ ...prev, name: e.target.value }))}
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
+                                                        placeholder="Your name" />
+                                                    <input type="email" value={qaForm.email} onChange={e => setQaForm(prev => ({ ...prev, email: e.target.value }))}
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
+                                                        placeholder="your@email.com" />
                                                 </div>
+                                                <button onClick={submitQuestion} disabled={submittingQ}
+                                                    className="bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2.5 rounded-lg hover:bg-[#e0a218] transition-all disabled:opacity-50 text-sm">
+                                                    {submittingQ ? 'Submitting...' : 'Submit'}
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Customer Reviews */}
                             <div>
-                                <button onClick={() => toggleSection('reviews')}
-                                    className="w-full flex items-center justify-between py-4 text-left">
+                                <button onClick={() => toggleSection('reviews')} className="w-full flex items-center justify-between py-4 text-left">
                                     <span className="font-semibold text-[#143D59]">Customer Reviews</span>
                                     {openSections.includes('reviews') ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
                                 </button>
                                 {openSections.includes('reviews') && (
                                     <div className="pb-6">
-                                        <div className="flex items-start gap-6 mb-6">
-                                            <div>
-                                                <p className="text-5xl font-black text-[#143D59]">0.0</p>
-                                                <div className="flex items-center gap-0.5 my-1">
-                                                    {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} className="text-gray-200" />)}
-                                                </div>
-                                                <p className="text-xs text-gray-400">0 reviews</p>
-                                            </div>
-                                            <div className="flex-1 space-y-1.5">
-                                                {[5, 4, 3, 2, 1].map(star => (
-                                                    <div key={star} className="flex items-center gap-2">
-                                                        <span className="text-xs text-gray-500 w-10">{star} star</span>
-                                                        <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                                                            <div className="bg-yellow-400 h-1.5 rounded-full w-0" />
-                                                        </div>
-                                                        <span className="text-xs text-gray-400 w-6">0%</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-gray-700 mb-1">0 Review For This Product</p>
-                                        <p className="text-sm text-gray-400 mb-6">There are no reviews for this product yet.</p>
+                                        <p className="text-sm text-gray-400 mb-6">No reviews yet.</p>
                                         {reviewSubmitted ? (
                                             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                                                 <p className="text-green-700 font-medium text-sm">✅ Review submitted! Thank you.</p>
                                             </div>
                                         ) : (
-                                            <div>
-                                                <h4 className="font-semibold text-[#143D59] mb-1">Add A Review</h4>
-                                                <p className="text-xs text-gray-400 mb-4">Your email address will not be published. Required fields are marked *</p>
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-600 mb-2 block">Your rating of this product</label>
-                                                        <div className="flex items-center gap-1">
-                                                            {[1, 2, 3, 4, 5].map(star => (
-                                                                <button key={star} onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}>
-                                                                    <Star size={22} className={reviewForm.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-600 mb-1 block">Your review</label>
-                                                        <textarea value={reviewForm.review}
-                                                            onChange={e => setReviewForm(prev => ({ ...prev, review: e.target.value }))}
-                                                            rows={4}
-                                                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800 resize-none"
-                                                            placeholder="Write your review here..." />
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Name *</label>
-                                                            <input value={reviewForm.name}
-                                                                onChange={e => setReviewForm(prev => ({ ...prev, name: e.target.value }))}
-                                                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
-                                                                placeholder="Your name" />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Email *</label>
-                                                            <input type="email" value={reviewForm.email}
-                                                                onChange={e => setReviewForm(prev => ({ ...prev, email: e.target.value }))}
-                                                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
-                                                                placeholder="your@email.com" />
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={submitReview} disabled={submittingReview}
-                                                        className="border-2 border-[#F5B41A] text-[#143D59] font-bold px-6 py-2.5 rounded-lg hover:bg-amber-50 transition-all disabled:opacity-50 text-sm">
-                                                        {submittingReview ? 'Submitting...' : 'Write Your Review'}
-                                                    </button>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-1">
+                                                    {[1, 2, 3, 4, 5].map(star => (
+                                                        <button key={star} onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}>
+                                                            <Star size={22} className={reviewForm.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
+                                                        </button>
+                                                    ))}
                                                 </div>
+                                                <textarea value={reviewForm.review} onChange={e => setReviewForm(prev => ({ ...prev, review: e.target.value }))} rows={4}
+                                                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800 resize-none"
+                                                    placeholder="Write your review here..." />
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input value={reviewForm.name} onChange={e => setReviewForm(prev => ({ ...prev, name: e.target.value }))}
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
+                                                        placeholder="Your name" />
+                                                    <input type="email" value={reviewForm.email} onChange={e => setReviewForm(prev => ({ ...prev, email: e.target.value }))}
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#143D59] text-gray-800"
+                                                        placeholder="your@email.com" />
+                                                </div>
+                                                <button onClick={submitReview} disabled={submittingReview}
+                                                    className="border-2 border-[#F5B41A] text-[#143D59] font-bold px-6 py-2.5 rounded-lg hover:bg-amber-50 transition-all disabled:opacity-50 text-sm">
+                                                    {submittingReview ? 'Submitting...' : 'Write Your Review'}
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -465,21 +336,13 @@ export default function Product() {
                         </div>
                     </div>
 
-                    {/* RIGHT — Sticky Panel */}
                     <div className="w-80 flex-shrink-0">
                         <div className="sticky top-4">
                             <div className="flex items-center gap-3 mb-3">
-                                <span className="text-sm text-gray-400">0 reviews</span>
-                                {product.payment_type === 'prepaid_cod' && (
-                                    <span className="bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded">Prepaid & COD</span>
-                                )}
-                                {product.payment_type === 'prepaid' && (
-                                    <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded">Prepaid Only</span>
-                                )}
+                                {product.payment_type === 'prepaid_cod' && <span className="bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded">Prepaid & COD</span>}
+                                {product.payment_type === 'prepaid' && <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded">Prepaid Only</span>}
                             </div>
-
                             <h1 className="text-xl font-bold text-[#143D59] leading-snug mb-4">{product.name}</h1>
-
                             <div className="flex items-baseline gap-2 mb-1">
                                 <span className="text-2xl font-bold text-[#143D59]">₹{costPrice.toLocaleString()}</span>
                                 <span className="text-gray-400 text-sm line-through">₹{mrp.toLocaleString()}</span>
@@ -488,97 +351,46 @@ export default function Product() {
                             <p className="text-xs text-gray-400 mb-5">Inclusive of all taxes + shipping</p>
 
                             <div className="border-t border-gray-100 pt-4">
-                                {product.stock > 0 && (
+                                {(product.stock || 0) > 0 && (
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                                            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                                className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">
-                                                <Minus size={14} />
-                                            </button>
+                                            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50"><Minus size={14} /></button>
                                             <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-                                            <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                                                className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">
-                                                <Plus size={14} />
-                                            </button>
+                                            <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50"><Plus size={14} /></button>
                                         </div>
                                         <span className="text-xs text-gray-400">{product.stock} available</span>
                                     </div>
                                 )}
 
-                                {product.stock === 0 ? (
+                                {(product.stock || 0) === 0 ? (
                                     <button disabled className="w-full bg-gray-100 text-gray-400 font-bold py-3 rounded-lg mb-3 cursor-not-allowed">Out of Stock</button>
                                 ) : !user ? (
-                                    <>
-                                        <Link to="/login" className="w-full bg-[#F5B41A] text-[#143D59] font-bold py-3 rounded-lg mb-3 text-center block hover:bg-[#e0a218] transition-all">
-                                            Add to Cart
-                                        </Link>
-                                        <Link to="/login" className="w-full border-2 border-[#F5B41A] text-[#143D59] font-bold py-3 rounded-lg mb-3 text-center block hover:bg-amber-50 transition-all">
-                                            Push to Shopify
-                                        </Link>
-                                    </>
+                                    <Link to="/login" className="w-full bg-[#F5B41A] text-[#143D59] font-bold py-3 rounded-lg mb-3 text-center block hover:bg-[#e0a218] transition-all">
+                                        Sign in to Buy
+                                    </Link>
                                 ) : (
-                                    <>
-                                        <button onClick={() => alert('Checkout coming soon! 🚀')}
-                                            className="w-full bg-[#F5B41A] text-[#143D59] font-bold py-3 rounded-lg mb-3 hover:bg-[#e0a218] transition-all">
-                                            Add to Cart
-                                        </button>
-                                        {added ? (
-                                            <button disabled className="w-full border-2 border-green-200 bg-green-50 text-green-600 font-bold py-3 rounded-lg mb-3 cursor-default">
-                                                ✓ Pushed to Shopify
-                                            </button>
-                                        ) : showProfitInput ? (
-                                            <div className="border border-amber-200 bg-amber-50 rounded-lg p-4 mb-3">
-                                                <p className="text-sm font-bold text-amber-800 mb-2">💰 Set Your Profit</p>
-                                                <div className="flex gap-2 mb-3">
-                                                    <input type="number" min="0" placeholder="e.g. ₹200"
-                                                        value={profit} onChange={e => setProfit(e.target.value)}
-                                                        className="flex-1 border border-amber-200 rounded-lg px-3 py-2 text-sm outline-none bg-white" />
-                                                    {profit && (
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-[10px] text-amber-600">Customer pays</p>
-                                                            <p className="text-sm font-black text-amber-800">₹{calcCustomerPrice()}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => setShowProfitInput(false)}
-                                                        className="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                                                    <button onClick={handleConfirmPush} disabled={adding}
-                                                        className="flex-1 py-2 bg-[#F5B41A] text-[#143D59] font-bold rounded-lg text-sm hover:bg-[#e0a218] disabled:opacity-50">
-                                                        {adding ? 'Pushing...' : 'Confirm & Push'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button onClick={() => setShowProfitInput(true)}
-                                                className="w-full border-2 border-[#F5B41A] text-[#143D59] font-bold py-3 rounded-lg mb-3 hover:bg-amber-50 transition-all">
-                                                Push to Shopify
-                                            </button>
-                                        )}
-                                    </>
+                                    <button onClick={() => alert('Checkout coming soon! 🚀')}
+                                        className="w-full bg-[#F5B41A] text-[#143D59] font-bold py-3 rounded-lg mb-3 hover:bg-[#e0a218] transition-all">
+                                        Add to Cart
+                                    </button>
                                 )}
 
                                 <div className="flex items-center justify-between py-3 border-t border-gray-100">
-                                    <button onClick={() => setWishlisted(!wishlisted)}
-                                        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#143D59] transition-colors">
-                                        <Heart size={15} className={wishlisted ? 'fill-red-500 text-red-500' : ''} />
-                                        Wishlist
+                                    <button onClick={() => setWishlisted(!wishlisted)} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#143D59] transition-colors">
+                                        <Heart size={15} className={wishlisted ? 'fill-red-500 text-red-500' : ''} /> Wishlist
                                     </button>
-                                    <button onClick={() => setOpenSections(prev => prev.includes('qa') ? prev : [...prev, 'qa'])}
-                                        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#143D59] transition-colors">
-                                        <MessageCircle size={15} />
-                                        Ask a Question
+                                    <button onClick={() => setOpenSections(prev => prev.includes('qa') ? prev : [...prev, 'qa'])} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#143D59] transition-colors">
+                                        <MessageCircle size={15} /> Ask a Question
                                     </button>
                                     <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#143D59] transition-colors">
-                                        <Share2 size={15} />
-                                        Share
+                                        <Share2 size={15} /> Share
                                     </button>
                                 </div>
 
                                 <div className="border-t border-gray-100 pt-4 space-y-3">
                                     <div className="flex items-start gap-3">
                                         <Truck size={18} className="text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                                        <p className="text-sm text-gray-600">Product will arrive within <strong>3 to 10 working days</strong> from dispatch</p>
+                                        <p className="text-sm text-gray-600">Arrives within <strong>3 to 10 working days</strong> from dispatch</p>
                                     </div>
                                     <div className="flex items-start gap-3">
                                         <RefreshCw size={18} className="text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
@@ -590,79 +402,40 @@ export default function Product() {
                     </div>
                 </div>
 
-                {/* More from this Supplier */}
                 {supplierProducts.length > 0 && (
                     <div className="mt-12">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-[#143D59]">More from this seller</h3>
-                            <div className="flex items-center gap-2">
-                                <button className="w-8 h-8 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50">
-                                    <ChevronLeft size={16} className="text-gray-500" />
-                                </button>
-                                <button className="w-8 h-8 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50">
-                                    <ChevronRight size={16} className="text-gray-500" />
-                                </button>
-                            </div>
-                        </div>
+                        <h3 className="text-lg font-bold text-[#143D59] mb-4">More from this supplier</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            {supplierProducts.slice(0, 4).map(p => {
-                                const price = calcPrice(p)
-                                const pMrp = p.retail_price || Math.ceil(p.supplier_price * 1.5)
-                                const pDiscount = Math.round(((pMrp - price) / pMrp) * 100)
-                                return (
-                                    <div key={p.id} onClick={() => navigate(`/product/${p.id}`)}
-                                        className="border border-gray-100 cursor-pointer hover:shadow-sm transition-all group">
-                                        <div className="h-44 bg-gray-50 overflow-hidden">
-                                            {p.images?.[0]
-                                                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain p-2" />
-                                                : <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl">📦</div>}
-                                        </div>
-                                        <div className="p-3">
-                                            <p className="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{p.name}</p>
-                                            <p className="text-xs text-gray-400 mb-1">0 reviews</p>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[#143D59] font-bold text-sm">₹{price.toLocaleString()}</span>
-                                                <span className="text-gray-400 text-xs line-through">₹{pMrp.toLocaleString()}</span>
-                                                {pDiscount > 0 && <span className="text-green-600 text-xs">{pDiscount}% Off</span>}
-                                            </div>
-                                        </div>
+                            {supplierProducts.slice(0, 4).map(p => (
+                                <div key={p.id} onClick={() => navigate(`/product/${p.id}`)} className="border border-gray-100 cursor-pointer hover:shadow-sm transition-all">
+                                    <div className="h-44 bg-gray-50 overflow-hidden">
+                                        {p.images?.[0] ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain p-2" /> : <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl">📦</div>}
                                     </div>
-                                )
-                            })}
+                                    <div className="p-3">
+                                        <p className="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{p.name}</p>
+                                        <span className="text-[#143D59] font-bold text-sm">₹{calcPrice(p).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
 
-                {/* Related Products */}
                 {relatedProducts.length > 0 && (
                     <div className="mt-12">
                         <h3 className="text-lg font-bold text-[#143D59] mb-4">Related Products</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            {relatedProducts.slice(0, 4).map(p => {
-                                const price = calcPrice(p)
-                                const pMrp = p.retail_price || Math.ceil(p.supplier_price * 1.5)
-                                const pDiscount = Math.round(((pMrp - price) / pMrp) * 100)
-                                return (
-                                    <div key={p.id} onClick={() => navigate(`/product/${p.id}`)}
-                                        className="border border-gray-100 cursor-pointer hover:shadow-sm transition-all group">
-                                        <div className="h-44 bg-gray-50 overflow-hidden">
-                                            {p.images?.[0]
-                                                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain p-2" />
-                                                : <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl">📦</div>}
-                                        </div>
-                                        <div className="p-3">
-                                            <p className="text-xs text-gray-400 mb-0.5">{p.supplier_profiles?.business_name || 'Verified Supplier'}</p>
-                                            <p className="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{p.name}</p>
-                                            <p className="text-xs text-gray-400 mb-1">0 reviews</p>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[#143D59] font-bold text-sm">₹{price.toLocaleString()}</span>
-                                                <span className="text-gray-400 text-xs line-through">₹{pMrp.toLocaleString()}</span>
-                                                {pDiscount > 0 && <span className="text-green-600 text-xs">{pDiscount}% Off</span>}
-                                            </div>
-                                        </div>
+                            {relatedProducts.slice(0, 4).map(p => (
+                                <div key={p.id} onClick={() => navigate(`/product/${p.id}`)} className="border border-gray-100 cursor-pointer hover:shadow-sm transition-all">
+                                    <div className="h-44 bg-gray-50 overflow-hidden">
+                                        {p.images?.[0] ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain p-2" /> : <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl">📦</div>}
                                     </div>
-                                )
-                            })}
+                                    <div className="p-3">
+                                        <p className="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{p.name}</p>
+                                        <span className="text-[#143D59] font-bold text-sm">₹{calcPrice(p).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

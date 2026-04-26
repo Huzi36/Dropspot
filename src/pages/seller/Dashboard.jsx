@@ -11,22 +11,16 @@ export default function SellerDashboard() {
     const [loading, setLoading] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(true)
 
-    useEffect(() => { fetchData() }, [])
+    useEffect(() => {
+        if (profile?.id) fetchData()
+    }, [profile?.id])
 
     async function fetchData() {
         try {
-            const { data: sellerProfile } = await supabase
-                .from('seller_profiles')
-                .select('id')
-                .eq('user_id', profile?.id)
-                .single()
-
-            if (!sellerProfile) return
-
             const { data: orders } = await supabase
                 .from('orders')
                 .select('*')
-                .eq('seller_id', sellerProfile.id)
+                .eq('seller_id', profile.id)
                 .order('created_at', { ascending: false })
                 .limit(5)
 
@@ -57,9 +51,7 @@ export default function SellerDashboard() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-
             <SellerSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>
@@ -68,7 +60,6 @@ export default function SellerDashboard() {
                     <p className="text-gray-500 mt-1">Here's what's happening with your store today.</p>
                 </div>
 
-                {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
                     {[
                         { label: 'Total Orders', value: stats.total_orders, icon: '📦', color: 'bg-blue-50 text-blue-600', trend: 'All time' },
@@ -87,19 +78,16 @@ export default function SellerDashboard() {
                     ))}
                 </div>
 
-                {/* Quick Actions */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <Link to="/seller/catalog"
-                        className="bg-[#143D59] hover:bg-[#1a4f73] text-white rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
+                    <Link to="/seller/catalog" className="bg-[#143D59] hover:bg-[#1a4f73] text-white rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
                         <span className="text-3xl">📤</span>
                         <div>
-                            <p className="font-bold">Exported Products</p>
+                            <p className="font-bold">Product Catalog</p>
                             <p className="text-white/60 text-sm">Browse & add products</p>
                         </div>
                         <span className="ml-auto text-white/40 group-hover:text-white transition-colors">→</span>
                     </Link>
-                    <Link to="/seller/orders"
-                        className="bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
+                    <Link to="/seller/orders" className="bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
                         <span className="text-3xl">📥</span>
                         <div>
                             <p className="font-bold">Imported Orders</p>
@@ -107,8 +95,7 @@ export default function SellerDashboard() {
                         </div>
                         <span className="ml-auto text-[#143D59]/40 group-hover:text-[#143D59] transition-colors">→</span>
                     </Link>
-                    <Link to="/seller/stores"
-                        className="bg-white hover:bg-gray-50 text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg border border-gray-100 group">
+                    <Link to="/seller/stores" className="bg-white hover:bg-gray-50 text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg border border-gray-100 group">
                         <span className="text-3xl">🔗</span>
                         <div>
                             <p className="font-bold">Linked Stores</p>
@@ -118,7 +105,6 @@ export default function SellerDashboard() {
                     </Link>
                 </div>
 
-                {/* Recent Orders */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between p-6 border-b border-gray-100">
                         <h3 className="font-bold text-[#143D59] text-lg" style={{ fontFamily: "'Syne', sans-serif" }}>Recent Orders</h3>
@@ -131,8 +117,7 @@ export default function SellerDashboard() {
                             <p className="text-4xl mb-3">📭</p>
                             <p className="text-gray-500 font-medium">No orders yet</p>
                             <p className="text-gray-400 text-sm mt-1">Connect your Shopify store to start importing orders</p>
-                            <Link to="/seller/stores"
-                                className="inline-block mt-4 bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2 rounded-xl hover:bg-[#e0a218] transition-all">
+                            <Link to="/seller/stores" className="inline-block mt-4 bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2 rounded-xl hover:bg-[#e0a218] transition-all">
                                 Connect Shopify
                             </Link>
                         </div>
@@ -159,9 +144,7 @@ export default function SellerDashboard() {
                                                     {order.order_status?.replace('_', ' ').toUpperCase()}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-400">
-                                                {new Date(order.created_at).toLocaleDateString('en-IN')}
-                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-400">{new Date(order.created_at).toLocaleDateString('en-IN')}</td>
                                         </tr>
                                     ))}
                                 </tbody>

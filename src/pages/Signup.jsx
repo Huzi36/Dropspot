@@ -18,8 +18,8 @@ export default function Signup() {
         setLoading(true)
         setError('')
         try {
-            await signUp(form.email, form.password, form.fullName, '+91' + form.phone, 'seller')
-            navigate('/seller/dashboard')
+            await signUp(form.email, form.password, form.fullName, '+91' + form.phone, 'reseller')
+            navigate('/dashboard')
         } catch (err) {
             setError(err.message)
         } finally {
@@ -29,7 +29,6 @@ export default function Signup() {
 
     return (
         <div className="min-h-screen bg-white flex">
-            {/* Left Panel */}
             <div className="hidden lg:flex w-1/2 bg-[#143D59] flex-col justify-between p-12">
                 <div>
                     <h1 className="text-white text-3xl font-bold">Dropspot.</h1>
@@ -59,7 +58,6 @@ export default function Signup() {
                 </div>
             </div>
 
-            {/* Right Panel */}
             <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
                 <div className="w-full max-w-md">
                     <h2 className="text-3xl font-bold text-[#143D59] mb-1">Create your account</h2>
@@ -71,7 +69,7 @@ export default function Signup() {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-4">
                         <div>
                             <label className="text-gray-700 text-sm font-medium mb-1 block">Full Name</label>
                             <input name="fullName" type="text" required value={form.fullName} onChange={handleChange}
@@ -105,11 +103,11 @@ export default function Signup() {
                                 placeholder="Min 6 characters" />
                         </div>
 
-                        <button type="submit" disabled={loading}
+                        <button onClick={handleSubmit} disabled={loading}
                             className="w-full bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] font-bold py-3 rounded-lg transition-all mt-2 disabled:opacity-50">
-                            {loading ? 'Creating account...' : 'Start Selling Free'}
+                            {loading ? 'Creating account...' : 'Get Started Free'}
                         </button>
-                    </form>
+                    </div>
 
                     <p className="text-gray-500 text-sm text-center mt-6">
                         Already have an account?{' '}
@@ -118,7 +116,7 @@ export default function Signup() {
 
                     <p className="text-gray-400 text-xs text-center mt-3">
                         Are you a supplier?{' '}
-                        <a href="/seller-console" className="text-[#143D59] hover:underline">Go to Supplier Console →</a>
+                        <a href="/supplier-console" className="text-[#143D59] hover:underline">Go to Supplier Console →</a>
                     </p>
                 </div>
             </div>

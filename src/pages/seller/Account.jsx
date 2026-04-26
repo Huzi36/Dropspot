@@ -9,57 +9,25 @@ export default function SellerAccount() {
     const { profile } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activeTab, setActiveTab] = useState('Profile Information')
-    const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState('')
     const [form, setForm] = useState({
-        full_name: '',
-        phone: '',
-        store_name: '',
-        store_slug: '',
-        upi: '',
-        gstin: '',
-        business_name: '',
-        address: '',
-        city: '',
-        pincode: '',
-        bank_name: '',
-        account_number: '',
-        ifsc: '',
-        account_holder: '',
-        pan: '',
-        aadhaar: '',
-        new_password: '',
-        confirm_password: '',
+        full_name: '', phone: '', store_name: '', store_slug: '',
+        upi: '', gstin: '', business_name: '', address: '', city: '', pincode: '',
+        bank_name: '', account_number: '', ifsc: '', account_holder: '',
+        pan: '', aadhaar: '', new_password: '', confirm_password: '',
     })
 
-    useEffect(() => { fetchData() }, [])
-
-    async function fetchData() {
-        try {
-            const { data: sp } = await supabase
-                .from('seller_profiles')
-                .select('*')
-                .eq('user_id', profile?.id)
-                .single()
-
+    useEffect(() => {
+        if (profile) {
             setForm(prev => ({
                 ...prev,
-                full_name: profile?.full_name || '',
-                phone: profile?.phone?.replace('+91', '') || '',
-                store_name: sp?.store_name || '',
-                store_slug: sp?.store_slug || '',
-                upi: sp?.payment_method?.upi || '',
-                bank_name: sp?.payment_method?.bank_name || '',
-                account_number: sp?.payment_method?.account_number || '',
-                ifsc: sp?.payment_method?.ifsc || '',
-                account_holder: sp?.payment_method?.account_holder || '',
+                full_name: profile.full_name || '',
+                phone: profile.phone?.replace('+91', '') || '',
             }))
-        } finally {
-            setLoading(false)
         }
-    }
+    }, [profile])
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value })
@@ -72,23 +40,8 @@ export default function SellerAccount() {
             if (activeTab === 'Profile Information') {
                 await supabase.from('profiles').update({
                     full_name: form.full_name,
-                    phone: '+91' + form.phone
+                    phone: '+91' + form.phone,
                 }).eq('id', profile?.id)
-                await supabase.from('seller_profiles').update({
-                    store_name: form.store_name,
-                    store_slug: form.store_slug,
-                }).eq('user_id', profile?.id)
-            }
-            if (activeTab === 'Bank Details') {
-                await supabase.from('seller_profiles').update({
-                    payment_method: {
-                        upi: form.upi,
-                        bank_name: form.bank_name,
-                        account_number: form.account_number,
-                        ifsc: form.ifsc,
-                        account_holder: form.account_holder,
-                    }
-                }).eq('user_id', profile?.id)
             }
             if (activeTab === 'Password') {
                 if (form.new_password !== form.confirm_password) {
@@ -110,9 +63,7 @@ export default function SellerAccount() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-
             <SellerSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-[#143D59]" style={{ fontFamily: "'Syne', sans-serif" }}>Account Details</h2>
@@ -123,9 +74,7 @@ export default function SellerAccount() {
                     <div className="flex border-b border-gray-100 overflow-x-auto">
                         {TABS.map(tab => (
                             <button key={tab} onClick={() => { setActiveTab(tab); setSaved(false); setError('') }}
-                                className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${activeTab === tab
-                                    ? 'border-[#143D59] text-[#143D59]'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                                className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${activeTab === tab ? 'border-[#143D59] text-[#143D59]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                                 {tab}
                             </button>
                         ))}
@@ -278,12 +227,12 @@ export default function SellerAccount() {
                                 </div>
                                 <div className="md:col-span-2 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                                     <p className="text-yellow-800 text-sm font-medium">⚠️ KYC Verification</p>
-                                    <p className="text-yellow-700 text-xs mt-1">Your KYC details are used for verification and payouts. This information is kept secure and private.</p>
+                                    <p className="text-yellow-700 text-xs mt-1">Your KYC details are used for verification and payouts. Kept secure and private.</p>
                                 </div>
                             </div>
                         )}
 
-                        <button onClick={handleSave} disabled={saving || loading}
+                        <button onClick={handleSave} disabled={saving}
                             className="mt-8 bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] font-bold px-8 py-3 rounded-xl transition-all disabled:opacity-50">
                             {saving ? 'Saving...' : 'Update'}
                         </button>

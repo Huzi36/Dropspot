@@ -21,23 +21,15 @@ export default function SupplierDashboard() {
 
     async function fetchData() {
         try {
-            const { data: sp } = await supabase
-                .from('supplier_profiles')
-                .select('id')
-                .eq('user_id', profile?.id)
-                .single()
-
-            if (!sp) return
-
             const { data: products } = await supabase
                 .from('products')
-                .select('id, is_active')
-                .eq('supplier_id', sp.id)
+                .select('id, in_stock')
+                .eq('supplier_id', profile?.id)
 
             const { data: orderItems } = await supabase
                 .from('order_items')
                 .select('*, orders(order_status, created_at, customer_name, customer_city)')
-                .eq('supplier_id', sp.id)
+                .eq('supplier_id', profile?.id)
                 .order('created_at', { ascending: false })
                 .limit(5)
 
@@ -45,7 +37,7 @@ export default function SupplierDashboard() {
                 setStats(prev => ({
                     ...prev,
                     total_products: products.length,
-                    active_products: products.filter(p => p.is_active).length,
+                    active_products: products.filter(p => p.in_stock).length,
                 }))
             }
 
@@ -88,7 +80,7 @@ export default function SupplierDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
                     {[
                         { label: 'Total Products', value: stats.total_products, icon: '📦', color: 'bg-blue-50 text-blue-600', trend: 'Listed' },
-                        { label: 'Active Products', value: stats.active_products, icon: '✅', color: 'bg-green-50 text-green-600', trend: 'Live on site' },
+                        { label: 'In Stock', value: stats.active_products, icon: '✅', color: 'bg-green-50 text-green-600', trend: 'Available' },
                         { label: 'Pending Orders', value: stats.pending_orders, icon: '⏳', color: 'bg-yellow-50 text-yellow-600', trend: 'Needs action' },
                         { label: 'Total Earnings', value: `₹${stats.total_earnings.toLocaleString()}`, icon: '💰', color: 'bg-purple-50 text-purple-600', trend: 'All time' },
                     ].map((stat, i) => (
@@ -105,7 +97,7 @@ export default function SupplierDashboard() {
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                    <Link to="/seller-console/products"
+                    <Link to="/supplier-console/products"
                         className="bg-[#143D59] hover:bg-[#1a4f73] text-white rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
                         <span className="text-3xl">➕</span>
                         <div>
@@ -114,7 +106,7 @@ export default function SupplierDashboard() {
                         </div>
                         <span className="ml-auto text-white/40 group-hover:text-white transition-colors">→</span>
                     </Link>
-                    <Link to="/seller-console/orders"
+                    <Link to="/supplier-console/orders"
                         className="bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] rounded-2xl p-6 flex items-center gap-4 transition-all hover:shadow-lg group">
                         <span className="text-3xl">📋</span>
                         <div>
@@ -129,7 +121,7 @@ export default function SupplierDashboard() {
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between p-6 border-b border-gray-100">
                         <h3 className="font-bold text-[#143D59] text-lg" style={{ fontFamily: "'Syne', sans-serif" }}>Recent Orders</h3>
-                        <Link to="/seller-console/orders" className="text-sm text-[#F5B41A] font-semibold hover:underline">View all →</Link>
+                        <Link to="/supplier-console/orders" className="text-sm text-[#F5B41A] font-semibold hover:underline">View all →</Link>
                     </div>
 
                     {loading ? (
@@ -139,7 +131,7 @@ export default function SupplierDashboard() {
                             <p className="text-4xl mb-3">📭</p>
                             <p className="text-gray-500 font-medium">No orders yet</p>
                             <p className="text-gray-400 text-sm mt-1">Orders will appear here once sellers start selling your products</p>
-                            <Link to="/seller-console/products"
+                            <Link to="/supplier-console/products"
                                 className="inline-block mt-4 bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2 rounded-xl hover:bg-[#e0a218] transition-all">
                                 Add Products
                             </Link>

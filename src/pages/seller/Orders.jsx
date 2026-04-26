@@ -19,30 +19,22 @@ export default function SellerOrders() {
     const [orders, setOrders] = useState([])
     const [loading, setLoading] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(true)
-    const [sellerProfile, setSellerProfile] = useState(null)
     const [selected, setSelected] = useState({})
     const [activeTab, setActiveTab] = useState('new')
     const [paying, setPaying] = useState(false)
 
-    useEffect(() => { fetchData() }, [])
+    useEffect(() => {
+        if (profile?.id) fetchData()
+    }, [profile?.id])
 
     async function fetchData() {
         try {
-            const { data: sp } = await supabase
-                .from('seller_profiles')
-                .select('id')
-                .eq('user_id', profile?.id)
-                .single()
-            setSellerProfile(sp)
-
-            if (sp) {
-                const { data: ordersData } = await supabase
-                    .from('orders')
-                    .select('*, order_items(*, products(name, images, weight_grams))')
-                    .eq('seller_id', sp.id)
-                    .order('created_at', { ascending: false })
-                setOrders(ordersData || [])
-            }
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select('*, order_items(*, products(name, images, weight_grams))')
+                .eq('seller_id', profile.id)
+                .order('created_at', { ascending: false })
+            setOrders(ordersData || [])
         } finally {
             setLoading(false)
         }
@@ -83,14 +75,13 @@ export default function SellerOrders() {
         setPaying(true)
         try {
             for (const order of selectedOrders) {
-                await supabase
-                    .from('orders')
+                await supabase.from('orders')
                     .update({ order_status: 'seller_paid', payment_status: 'paid' })
                     .eq('id', order.id)
             }
             await fetchData()
             setSelected({})
-            alert(`✅ Payment successful for ${selectedOrders.length} order(s)! They have been routed to suppliers.`)
+            alert(`✅ Payment successful for ${selectedOrders.length} order(s)!`)
         } finally {
             setPaying(false)
         }
@@ -99,9 +90,7 @@ export default function SellerOrders() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-
             <SellerSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -120,9 +109,7 @@ export default function SellerOrders() {
                             <p className="text-blue-200 text-sm mt-0.5">Total: <span className="text-[#F5B41A] font-bold">₹{totalToPay.toLocaleString()}</span></p>
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setSelected({})} className="text-white/60 hover:text-white text-sm px-4 py-2 rounded-xl border border-white/20 transition-all">
-                                Clear
-                            </button>
+                            <button onClick={() => setSelected({})} className="text-white/60 hover:text-white text-sm px-4 py-2 rounded-xl border border-white/20 transition-all">Clear</button>
                             <button onClick={handleBatchPay} disabled={paying}
                                 className="bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] font-bold px-6 py-2 rounded-xl transition-all disabled:opacity-50">
                                 {paying ? 'Processing...' : `Pay ₹${totalToPay.toLocaleString()} & Fulfill`}
@@ -134,9 +121,7 @@ export default function SellerOrders() {
                 <div className="flex gap-2 mb-6 border-b border-gray-200">
                     {tabs.map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                            className={`px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${activeTab === tab.key
-                                ? 'border-[#143D59] text-[#143D59]'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                            className={`px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${activeTab === tab.key ? 'border-[#143D59] text-[#143D59]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                             {tab.label}
                             {tab.count > 0 && (
                                 <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-[#143D59] text-white' : 'bg-gray-100 text-gray-500'}`}>
@@ -174,8 +159,7 @@ export default function SellerOrders() {
                             {activeTab === 'new' ? 'Connect your Shopify store to start pulling in orders' : 'Orders will appear here once they progress'}
                         </p>
                         {activeTab === 'new' && (
-                            <Link to="/seller/stores"
-                                className="inline-block mt-4 bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2 rounded-xl hover:bg-[#e0a218] transition-all">
+                            <Link to="/seller/stores" className="inline-block mt-4 bg-[#F5B41A] text-[#143D59] font-bold px-6 py-2 rounded-xl hover:bg-[#e0a218] transition-all">
                                 🔗 Connect Shopify
                             </Link>
                         )}
@@ -183,14 +167,12 @@ export default function SellerOrders() {
                 ) : (
                     <div className="space-y-4">
                         {filteredOrders.map(order => (
-                            <div key={order.id}
-                                className={`bg-white rounded-2xl border transition-all ${selected[order.id] ? 'border-[#143D59] shadow-md' : 'border-gray-100 hover:shadow-sm'}`}>
+                            <div key={order.id} className={`bg-white rounded-2xl border transition-all ${selected[order.id] ? 'border-[#143D59] shadow-md' : 'border-gray-100 hover:shadow-sm'}`}>
                                 <div className="p-6">
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-3">
                                             {order.order_status === 'new' && (
-                                                <input type="checkbox" checked={!!selected[order.id]}
-                                                    onChange={() => toggleSelect(order.id)}
+                                                <input type="checkbox" checked={!!selected[order.id]} onChange={() => toggleSelect(order.id)}
                                                     className="w-4 h-4 accent-[#143D59] cursor-pointer" />
                                             )}
                                             <div>
@@ -224,10 +206,6 @@ export default function SellerOrders() {
                                                     <span className="text-gray-500">Your earnings</span>
                                                     <span className="font-semibold text-green-600">₹{order.seller_earnings?.toLocaleString() || '0'}</span>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Shipping</span>
-                                                    <span className="text-gray-700">₹{order.shipping_cost?.toLocaleString() || '0'}</span>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -238,27 +216,25 @@ export default function SellerOrders() {
                                             <div className="space-y-2">
                                                 {order.order_items.map(item => (
                                                     <div key={item.id} className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
+                                                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                                             {item.products?.images?.[0]
                                                                 ? <img src={item.products.images[0]} className="w-full h-full object-cover rounded-lg" alt="" />
-                                                                : '📦'}
+                                                                : <span>📦</span>}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium text-gray-800 truncate">{item.products?.name || 'Product'}</p>
                                                             <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
                                                         </div>
-                                                        <p className="text-sm font-semibold text-gray-700">₹{item.selling_price?.toLocaleString()}</p>
+                                                        <p className="text-sm font-semibold text-gray-700">₹{item.price_at_purchase?.toLocaleString()}</p>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
 
-                                    {order.order_status === 'shipped' && (
+                                    {order.order_status === 'shipped' && order.tracking_number && (
                                         <div className="mt-4 border-t border-gray-100 pt-4">
-                                            <button className="text-sm text-blue-600 font-medium hover:underline">
-                                                🚚 Track shipment →
-                                            </button>
+                                            <p className="text-sm text-gray-600">🚚 Tracking: <span className="font-mono font-semibold">{order.tracking_number}</span></p>
                                         </div>
                                     )}
                                 </div>

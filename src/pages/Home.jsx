@@ -54,7 +54,7 @@ export default function Home() {
         try {
             const { data } = await supabase
                 .from('products')
-                .select('*, supplier_profiles(business_name)')
+                .select('*')
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
             setProducts(data || [])
@@ -69,7 +69,7 @@ export default function Home() {
         try {
             let q = supabase
                 .from('products')
-                .select('*, supplier_profiles(business_name)')
+                .select('*')
                 .eq('is_active', true)
                 .ilike('name', `%${query}%`)
             if (searchCategory !== 'All Category') q = q.eq('category', searchCategory)
@@ -94,9 +94,9 @@ export default function Home() {
     }
 
     function calcPrice(product) {
-        const margin = product.supplier_price * 0.1
-        const shipping = product.weight_grams <= 500 ? 82.50 : 110
-        return Math.ceil(product.supplier_price + margin + shipping)
+        const margin = (product.supplier_price || 0) * 0.1
+        const shipping = (product.weight_grams || 0) <= 500 ? 82.50 : 110
+        return Math.ceil((product.supplier_price || 0) + margin + shipping)
     }
 
     function toggleWishlist(e, id) {
@@ -111,13 +111,13 @@ export default function Home() {
 
     function ProductCard({ product }) {
         const price = calcPrice(product)
-        const mrp = product.retail_price || Math.ceil(product.supplier_price * 1.5)
+        const mrp = product.retail_price || Math.ceil((product.supplier_price || 0) * 1.5)
         const discount = Math.round(((mrp - price) / mrp) * 100)
         return (
             <div onClick={() => navigate(`/product/${product.id}`)}
                 className="cursor-pointer group flex-shrink-0 border border-gray-100 hover:shadow-md transition-all duration-200 bg-white"
                 style={{ width: 'calc(50vw - 20px)', maxWidth: '160px' }}>
-                <div className="relative overflow-hidden bg-gray-50" style={{ height: 'calc(50vw - 20px)', maxWidth: '160px' }}>
+                <div className="relative overflow-hidden bg-gray-50" style={{ height: '160px' }}>
                     {product.images?.[0] ? (
                         <img src={product.images[0]} alt={product.name}
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
@@ -205,7 +205,7 @@ export default function Home() {
                             <div key={col} className="divide-y divide-gray-100">
                                 {items.slice(col * 3, col * 3 + 3).map(product => {
                                     const price = calcPrice(product)
-                                    const mrp = product.retail_price || Math.ceil(product.supplier_price * 1.5)
+                                    const mrp = product.retail_price || Math.ceil((product.supplier_price || 0) * 1.5)
                                     return (
                                         <div key={product.id} onClick={() => navigate(`/product/${product.id}`)}
                                             className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
@@ -297,21 +297,16 @@ export default function Home() {
             <div className="border-b border-gray-100 bg-white">
                 <div className="max-w-7xl mx-auto px-3 md:px-4">
                     <div className="flex items-center gap-3 h-14 md:h-16">
-                        {/* Logo */}
                         <Link to="/" className="flex-shrink-0">
                             <img src="/logo.png" alt="Dropspot" className="h-8 md:h-10 w-auto" />
                         </Link>
-
-                        {/* Search bar */}
                         <div className="flex-1 flex items-center border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors rounded-lg md:rounded-none">
                             <select value={searchCategory} onChange={e => setSearchCategory(e.target.value)}
                                 className="px-2 py-2 text-xs text-gray-600 border-r border-gray-200 bg-gray-50 outline-none cursor-pointer hidden md:block">
                                 <option>All Category</option>
                                 {CATEGORIES.map(c => <option key={c.name}>{c.name}</option>)}
                             </select>
-                            <input
-                                value={searchInput}
-                                onChange={e => setSearchInput(e.target.value)}
+                            <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && searchInput.trim() && handleSearch(searchInput)}
                                 placeholder="Search products..."
                                 className="flex-1 px-3 py-2.5 text-sm outline-none text-gray-800 bg-white min-w-0" />
@@ -320,20 +315,17 @@ export default function Home() {
                                     <X size={13} />
                                 </button>
                             )}
-                            <button
-                                onClick={() => searchInput.trim() && handleSearch(searchInput)}
+                            <button onClick={() => searchInput.trim() && handleSearch(searchInput)}
                                 className="bg-[#F5B41A] px-3 md:px-5 py-2.5 flex items-center justify-center hover:bg-[#e0a218] transition-colors flex-shrink-0">
                                 <Search size={15} className="text-[#143D59]" />
                             </button>
                         </div>
-
-                        {/* Icons */}
                         <div className="flex items-center gap-3 flex-shrink-0">
                             <button className="text-gray-500 hover:text-[#143D59] transition-colors">
                                 <Heart size={20} />
                             </button>
                             {user ? (
-                                <Link to={profile?.role === 'supplier' ? '/seller-console/dashboard' : '/seller/dashboard'}
+                                <Link to={profile?.role === 'supplier' ? '/supplier-console/dashboard' : '/dashboard'}
                                     className="text-gray-500 hover:text-[#143D59] transition-colors">
                                     <User size={20} />
                                 </Link>
@@ -342,7 +334,6 @@ export default function Home() {
                                     <User size={20} />
                                 </Link>
                             )}
-                            {/* Mobile menu button */}
                             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                                 className="md:hidden text-gray-500 hover:text-[#143D59]">
                                 <Menu size={22} />
@@ -352,16 +343,13 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Mobile Menu Dropdown */}
+            {/* Mobile Menu */}
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-b border-gray-100 shadow-lg z-40 relative">
                     <div className="px-4 py-3 space-y-2">
-                        <Link to="/" onClick={() => setMobileMenuOpen(false)}
-                            className="block py-2 text-sm font-medium text-gray-700 hover:text-[#143D59]">Home</Link>
-                        <Link to="/" onClick={() => setMobileMenuOpen(false)}
-                            className="block py-2 text-sm font-medium text-gray-700 hover:text-[#143D59]">Shop</Link>
-                        <Link to="/seller-console" onClick={() => setMobileMenuOpen(false)}
-                            className="block py-2 text-sm font-medium text-[#143D59] font-bold">Become A Supplier</Link>
+                        <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-medium text-gray-700 hover:text-[#143D59]">Home</Link>
+                        <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-medium text-gray-700 hover:text-[#143D59]">Shop</Link>
+                        <Link to="/supplier-console" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-medium text-[#143D59] font-bold">Become A Supplier</Link>
                         <div className="border-t border-gray-100 pt-2">
                             <p className="text-xs text-gray-400 font-medium mb-2">Categories</p>
                             <div className="grid grid-cols-2 gap-1">
@@ -377,7 +365,7 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Sub Navbar - desktop only */}
+            {/* Sub Navbar */}
             <div className="bg-[#143D59] sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-9">
                     <div className="flex items-center gap-4 md:gap-6">
@@ -387,49 +375,44 @@ export default function Home() {
                         <Link to="/" className="text-white/70 text-xs md:text-sm hover:text-white transition-colors">Home</Link>
                         <Link to="/" className="text-white/70 text-xs md:text-sm hover:text-white transition-colors">Shop</Link>
                     </div>
-                    <Link to="/seller-console" className="text-white/70 text-xs md:text-sm hover:text-white transition-colors">
+                    <Link to="/supplier-console" className="text-white/70 text-xs md:text-sm hover:text-white transition-colors">
                         Become A Supplier
                     </Link>
                 </div>
             </div>
 
-            {/* Show search results OR normal homepage */}
             {search ? (
                 <SearchResults />
             ) : (
                 <>
                     {/* Hero Banner */}
-                    <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
-                        <div className="relative bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 overflow-hidden rounded-xl"
-                            style={{ height: '220px', minHeight: '220px' }}>
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="px-6 md:px-12 max-w-xs md:max-w-xl">
-                                    <span className="inline-block bg-[#F5B41A] text-[#143D59] text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-full mb-2 md:mb-4 uppercase tracking-wide">
-                                        New Arrivals
-                                    </span>
-                                    <h1 className="text-2xl md:text-5xl font-black text-[#143D59] leading-tight mb-2 md:mb-3">
-                                        Sell Without<br />Holding Stock
-                                    </h1>
-                                    <p className="text-gray-500 text-xs md:text-sm mb-3 md:mb-5 leading-relaxed hidden sm:block">
-                                        Browse verified Indian suppliers. Set your price.
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <Link to="/signup"
-                                            className="bg-[#F5B41A] text-[#143D59] font-bold px-4 md:px-6 py-2 hover:bg-[#e0a218] transition-all text-xs md:text-sm">
-                                            Start Selling Free
-                                        </Link>
-                                        <button onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                            className="bg-white border border-gray-200 text-[#143D59] font-semibold px-4 md:px-6 py-2 hover:border-[#143D59] transition-all text-xs md:text-sm">
-                                            Browse
-                                        </button>
-                                    </div>
+                    <div className="w-full" style={{ height: '380px', minHeight: '380px', background: '#143D59', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center' }}>
+                            <div style={{ padding: '0 48px', maxWidth: '560px' }}>
+                                <span style={{ display: 'inline-block', background: '#F5B41A', color: '#143D59', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    New Arrivals
+                                </span>
+                                <h1 style={{ fontSize: 'clamp(28px, 5vw, 56px)', fontWeight: 900, color: 'white', lineHeight: 1.1, marginBottom: '12px' }}>
+                                    Sell Without<br />Holding Stock
+                                </h1>
+                                <p style={{ color: '#93c5fd', fontSize: '14px', marginBottom: '24px' }}>
+                                    Browse verified Indian suppliers. Set your price.
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <Link to="/signup" style={{ background: '#F5B41A', color: '#143D59', fontWeight: 700, padding: '10px 24px', fontSize: '14px', textDecoration: 'none' }}>
+                                        Start Selling Free
+                                    </Link>
+                                    <button onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                        style={{ background: 'white', color: '#143D59', fontWeight: 600, padding: '10px 24px', fontSize: '14px', border: '1px solid #e5e7eb', cursor: 'pointer' }}>
+                                        Browse
+                                    </button>
                                 </div>
                             </div>
-                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                {[0, 1, 2].map(i => (
-                                    <div key={i} className={`rounded-full ${i === 0 ? 'w-4 h-1 bg-[#143D59]' : 'w-1 h-1 bg-gray-300'}`} />
-                                ))}
-                            </div>
+                        </div>
+                        <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px' }}>
+                            {[0, 1, 2].map(i => (
+                                <div key={i} style={{ borderRadius: '999px', background: i === 0 ? 'white' : 'rgba(255,255,255,0.3)', width: i === 0 ? '16px' : '6px', height: '4px' }} />
+                            ))}
                         </div>
                     </div>
 
@@ -485,27 +468,18 @@ export default function Home() {
                                         <span className="text-xs text-gray-400">({filteredProducts.length})</span>
                                     </div>
                                 )}
-
                                 <Carousel title={category !== 'All' ? `${category} Products` : 'New Arrivals'} items={newArrivals} />
-
-                                {/* Shop by Category */}
                                 <div className="mb-8">
                                     <div className="flex items-center justify-between mb-4">
                                         <h2 className="text-base md:text-xl font-bold text-[#143D59]">Shop by Category</h2>
                                         {category !== 'All' && (
-                                            <button onClick={() => setCategory('All')} className="text-xs text-gray-500 hover:text-[#143D59]">
-                                                Clear filter
-                                            </button>
+                                            <button onClick={() => setCategory('All')} className="text-xs text-gray-500 hover:text-[#143D59]">Clear filter</button>
                                         )}
                                     </div>
                                     <div className="grid grid-cols-4 md:grid-cols-8 gap-2 md:gap-4">
                                         {CATEGORIES.map(cat => (
-                                            <button key={cat.name} onClick={() => handleCategoryClick(cat.name)}
-                                                className="flex flex-col items-center gap-1.5">
-                                                <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl md:text-2xl border-2 transition-all
-                                                    ${category === cat.name
-                                                        ? 'border-[#143D59] bg-[#143D59]/10 scale-110'
-                                                        : 'border-gray-100 bg-gray-50 hover:border-gray-200'}`}>
+                                            <button key={cat.name} onClick={() => handleCategoryClick(cat.name)} className="flex flex-col items-center gap-1.5">
+                                                <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl md:text-2xl border-2 transition-all ${category === cat.name ? 'border-[#143D59] bg-[#143D59]/10 scale-110' : 'border-gray-100 bg-gray-50 hover:border-gray-200'}`}>
                                                     {cat.emoji}
                                                 </div>
                                                 <span className={`text-[10px] md:text-[11px] font-medium text-center leading-tight ${category === cat.name ? 'text-[#143D59] font-bold' : 'text-gray-600'}`}>
@@ -515,15 +489,11 @@ export default function Home() {
                                         ))}
                                     </div>
                                 </div>
-
                                 {filteredProducts.length === 0 && category !== 'All' ? (
                                     <div className="text-center py-12 bg-gray-50 rounded-2xl">
                                         <p className="text-3xl mb-2">{CATEGORIES.find(c => c.name === category)?.emoji}</p>
                                         <p className="text-gray-500 font-medium text-sm">No {category} products yet</p>
-                                        <button onClick={() => setCategory('All')}
-                                            className="mt-3 bg-[#F5B41A] text-[#143D59] font-bold px-5 py-2 rounded-lg text-sm">
-                                            Browse All
-                                        </button>
+                                        <button onClick={() => setCategory('All')} className="mt-3 bg-[#F5B41A] text-[#143D59] font-bold px-5 py-2 rounded-lg text-sm">Browse All</button>
                                     </div>
                                 ) : (
                                     <>
@@ -598,7 +568,7 @@ export default function Home() {
                             </div>
                             <div className="border-t border-gray-100 pt-5 flex flex-col md:flex-row items-center justify-between gap-2">
                                 <p className="text-xs text-gray-400">© 2025 Dropspot. All rights reserved.</p>
-                                <a href="/seller-console" className="text-xs text-gray-400 hover:text-[#143D59]">Supplier Console →</a>
+                                <a href="/supplier-console" className="text-xs text-gray-400 hover:text-[#143D59]">Supplier Console →</a>
                             </div>
                         </div>
                     </footer>

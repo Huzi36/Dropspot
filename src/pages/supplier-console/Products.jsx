@@ -8,70 +8,41 @@ const CATEGORIES = ['Electronics', 'Fashion', 'Beauty', 'Home & Kitchen', 'Fitne
 const OPTION_TYPES = ['Color', 'Size', 'Material', 'Style', 'Storage', 'Weight', 'Custom']
 
 const EMPTY_FORM = {
-    name: '',
-    category: '',
-    supplier_price: '',
-    retail_price: '',
-    weight_grams: '',
-    length: '',
-    breadth: '',
-    height: '',
-    stock: '',
-    sku: '',
-    bullet_points: ['', '', '', '', ''],
-    long_description: '',
-    whats_included: '',
-    images: [],
-    has_variants: false,
-    variant_options: [],
-    variants: [],
-    payment_type: 'prepaid_cod',
-    warehouse_id: '',
+    name: '', category: '', supplier_price: '', retail_price: '',
+    weight_grams: '', length: '', breadth: '', height: '',
+    stock: '', sku: '', bullet_points: ['', '', '', '', ''],
+    long_description: '', whats_included: '', images: [],
+    has_variants: false, variant_options: [], variants: [],
+    payment_type: 'prepaid_cod', warehouse_id: '',
 }
 
 export default function SupplierProducts() {
     const { profile } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [products, setProducts] = useState([])
-    const [warehouses, setWarehouses] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [editProduct, setEditProduct] = useState(null)
     const [form, setForm] = useState(EMPTY_FORM)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [supplierProfile, setSupplierProfile] = useState(null)
     const [uploadingImages, setUploadingImages] = useState(false)
     const [variantInputs, setVariantInputs] = useState({})
     const fileInputRef = useRef(null)
     const variantFileRefs = useRef([])
 
-    useEffect(() => { fetchData() }, [])
+    useEffect(() => {
+        if (profile?.id) fetchData()
+    }, [profile?.id])
 
     async function fetchData() {
         try {
-            const { data: sp } = await supabase
-                .from('supplier_profiles')
+            const { data } = await supabase
+                .from('products')
                 .select('*')
-                .eq('user_id', profile?.id)
-                .single()
-            setSupplierProfile(sp)
-            if (sp) {
-                const { data } = await supabase
-                    .from('products')
-                    .select('*')
-                    .eq('supplier_id', sp.id)
-                    .order('created_at', { ascending: false })
-                setProducts(data || [])
-
-                const { data: wh } = await supabase
-                    .from('warehouses')
-                    .select('*')
-                    .eq('supplier_id', sp.id)
-                    .eq('is_active', true)
-                    .order('is_default', { ascending: false })
-                setWarehouses(wh || [])
-            }
+                .eq('supplier_id', profile.id)
+                .order('created_at', { ascending: false })
+            setProducts(data || [])
         } finally {
             setLoading(false)
         }
@@ -79,8 +50,7 @@ export default function SupplierProducts() {
 
     function openAddModal() {
         setEditProduct(null)
-        const defaultWh = warehouses.find(w => w.is_default)
-        setForm({ ...EMPTY_FORM, warehouse_id: defaultWh?.id || '' })
+        setForm(EMPTY_FORM)
         setVariantInputs({})
         setError('')
         setShowModal(true)
@@ -139,10 +109,7 @@ export default function SupplierProducts() {
         }
         return combos.map(combo => ({
             name: combo.map(c => c.value).join(' / '),
-            options: combo,
-            price: '',
-            stock: '',
-            imageUrl: '',
+            options: combo, price: '', stock: '', imageUrl: '',
         }))
     }
 
@@ -260,7 +227,7 @@ export default function SupplierProducts() {
                 variants: form.has_variants ? form.variants : [],
                 payment_type: form.payment_type,
                 warehouse_id: form.warehouse_id || null,
-                supplier_id: supplierProfile.id,
+                supplier_id: profile.id,
                 is_active: true,
             }
             if (editProduct) {
@@ -291,7 +258,6 @@ export default function SupplierProducts() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-
             <SupplierSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
             <main className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 p-8`}>
@@ -376,7 +342,6 @@ export default function SupplierProducts() {
                 )}
             </main>
 
-            {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
                     <div className="bg-white rounded-2xl w-full max-w-3xl my-8">
@@ -392,7 +357,7 @@ export default function SupplierProducts() {
                         <div className="p-6 space-y-8">
                             {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
-                            {/* 1. PRODUCT INFO */}
+                            {/* Product Info */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Product Information</h4>
                                 <div className="space-y-4">
@@ -429,57 +394,10 @@ export default function SupplierProducts() {
                                             ))}
                                         </div>
                                     </div>
-
-                                    {/* Warehouse Selection */}
-                                    <div>
-                                        <label className="text-gray-700 text-sm font-medium mb-1 block">
-                                            Pickup Warehouse
-                                            <span className="text-gray-400 font-normal ml-2 text-xs">— where should Shiprocket pick this up from?</span>
-                                        </label>
-                                        {warehouses.length === 0 ? (
-                                            <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                                <span className="text-xl">⚠️</span>
-                                                <div>
-                                                    <p className="text-sm font-medium text-amber-800">No warehouses added yet</p>
-                                                    <p className="text-xs text-amber-600 mt-0.5">
-                                                        Go to <a href="/seller-console/account" className="underline font-semibold">Account → Warehouses</a> to add a pickup location first
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 gap-2">
-                                                {warehouses.map(wh => (
-                                                    <button key={wh.id} type="button"
-                                                        onClick={() => setForm({ ...form, warehouse_id: wh.id })}
-                                                        className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${form.warehouse_id === wh.id
-                                                            ? 'border-[#143D59] bg-[#143D59]/5'
-                                                            : 'border-gray-100 hover:border-gray-200 bg-gray-50'}`}>
-                                                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-base ${form.warehouse_id === wh.id ? 'bg-[#143D59] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
-                                                            🏭
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-semibold text-gray-800">{wh.name}</p>
-                                                                {wh.is_default && (
-                                                                    <span className="text-[10px] bg-[#143D59] text-white px-1.5 py-0.5 rounded font-semibold">Default</span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-xs text-gray-400 mt-0.5 truncate">
-                                                                {wh.city}{wh.state ? `, ${wh.state}` : ''} · {wh.contact_name || 'No contact set'}
-                                                            </p>
-                                                        </div>
-                                                        {form.warehouse_id === wh.id && (
-                                                            <span className="text-[#143D59] font-bold flex-shrink-0">✓</span>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
 
-                            {/* 2. MEDIA */}
+                            {/* Media */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Media</h4>
                                 <div onClick={() => fileInputRef.current?.click()}
@@ -504,7 +422,7 @@ export default function SupplierProducts() {
                                 )}
                             </div>
 
-                            {/* 3. PRICING */}
+                            {/* Pricing */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Pricing</h4>
                                 <div className="space-y-4">
@@ -533,7 +451,7 @@ export default function SupplierProducts() {
                                     )}
                                     {form.supplier_price && (
                                         <div className="bg-[#F7F8FA] rounded-xl p-4 space-y-2">
-                                            <p className="text-sm font-bold text-[#143D59] mb-2">Price Breakdown (what seller sees)</p>
+                                            <p className="text-sm font-bold text-[#143D59] mb-2">Price Breakdown</p>
                                             <div className="flex justify-between text-xs text-gray-500"><span>Your price</span><span>₹{form.supplier_price}</span></div>
                                             <div className="flex justify-between text-xs text-gray-500"><span>Dropspot margin (10%)</span><span>₹{(parseFloat(form.supplier_price) * 0.1).toFixed(0)}</span></div>
                                             <div className="flex justify-between text-xs text-gray-500"><span>Shipping</span><span>₹{parseInt(form.weight_grams) <= 500 ? '82.50' : '110'}</span></div>
@@ -543,7 +461,7 @@ export default function SupplierProducts() {
                                 </div>
                             </div>
 
-                            {/* 4. VARIANTS */}
+                            {/* Variants */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Variants</h4>
                                 <div className="space-y-4">
@@ -557,16 +475,13 @@ export default function SupplierProducts() {
                                             <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${form.has_variants ? 'left-7' : 'left-1'}`} />
                                         </button>
                                     </div>
-
                                     {form.has_variants && (
                                         <div className="space-y-4">
                                             {form.variant_options.map((option, optIdx) => (
                                                 <div key={optIdx} className="border border-gray-200 rounded-2xl p-5">
                                                     <div className="flex items-center justify-between mb-4">
                                                         <p className="text-sm font-bold text-[#143D59]">Option {optIdx + 1}</p>
-                                                        <button onClick={() => removeOption(optIdx)} className="text-red-400 hover:text-red-600">
-                                                            <X size={16} />
-                                                        </button>
+                                                        <button onClick={() => removeOption(optIdx)} className="text-red-400 hover:text-red-600"><X size={16} /></button>
                                                     </div>
                                                     <div className="mb-4">
                                                         <label className="text-xs text-gray-500 font-medium mb-1 block">Option Name</label>
@@ -582,9 +497,7 @@ export default function SupplierProducts() {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <label className="text-xs text-gray-500 font-medium mb-2 block">
-                                                            Values {option.values?.length > 0 && <span className="text-gray-400">({option.values.length} added)</span>}
-                                                        </label>
+                                                        <label className="text-xs text-gray-500 font-medium mb-2 block">Values</label>
                                                         {option.values?.length > 0 && (
                                                             <div className="flex flex-wrap gap-2 mb-3">
                                                                 {option.values.map((val, valIdx) => (
@@ -606,84 +519,70 @@ export default function SupplierProducts() {
                                                                         setVariantInputs(prev => ({ ...prev, [optIdx]: '' }))
                                                                     }
                                                                 }}
-                                                                placeholder={`e.g. ${option.name === 'Color' ? 'Red, Blue, Green' : option.name === 'Size' ? 'S, M, L, XL' : 'Add value'}`}
+                                                                placeholder="Add value then press Enter"
                                                                 className="flex-1 border border-gray-200 text-gray-900 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm" />
-                                                            <button
-                                                                onClick={() => {
-                                                                    addValueToOption(optIdx, variantInputs[optIdx] || '')
-                                                                    setVariantInputs(prev => ({ ...prev, [optIdx]: '' }))
-                                                                }}
+                                                            <button onClick={() => { addValueToOption(optIdx, variantInputs[optIdx] || ''); setVariantInputs(prev => ({ ...prev, [optIdx]: '' })) }}
                                                                 className="px-4 py-2.5 bg-[#143D59] text-white text-sm font-medium rounded-lg hover:bg-[#1a4f73] transition-all">
                                                                 Add
                                                             </button>
                                                         </div>
-                                                        <p className="text-xs text-gray-400 mt-1">Press Enter or click Add after each value</p>
                                                     </div>
                                                 </div>
                                             ))}
-
                                             {form.variant_options.length < 3 && (
                                                 <button onClick={addOption}
                                                     className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 font-medium hover:border-[#143D59] hover:text-[#143D59] transition-all flex items-center justify-center gap-2">
                                                     <Plus size={16} /> Add Option
                                                 </button>
                                             )}
-
                                             {form.variants.length > 0 && (
-                                                <div>
-                                                    <h5 className="font-semibold text-gray-700 text-sm mb-3">
-                                                        {form.variants.length} variant{form.variants.length > 1 ? 's' : ''} — set price, stock & image per variant
-                                                    </h5>
-                                                    <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                                                        <table className="w-full">
-                                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                                <tr>
-                                                                    <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Variant</th>
-                                                                    <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Price (₹)</th>
-                                                                    <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Stock</th>
-                                                                    <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Image</th>
+                                                <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                                                    <table className="w-full">
+                                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                                            <tr>
+                                                                <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Variant</th>
+                                                                <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Price (₹)</th>
+                                                                <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Stock</th>
+                                                                <th className="text-left text-xs text-gray-500 font-semibold px-4 py-3">Image</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                            {form.variants.map((variant, i) => (
+                                                                <tr key={i} className="hover:bg-gray-50">
+                                                                    <td className="px-4 py-3"><span className="text-sm font-semibold text-gray-800">{variant.name}</span></td>
+                                                                    <td className="px-4 py-3">
+                                                                        <input type="number" value={variant.price} onChange={e => handleVariantChange(i, 'price', e.target.value)}
+                                                                            className="w-24 border border-gray-200 text-gray-900 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm"
+                                                                            placeholder={form.supplier_price || '0'} />
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        <input type="number" value={variant.stock} onChange={e => handleVariantChange(i, 'stock', e.target.value)}
+                                                                            className="w-20 border border-gray-200 text-gray-900 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm"
+                                                                            placeholder="0" />
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        {variant.imageUrl ? (
+                                                                            <div className="relative w-10 h-10">
+                                                                                <img src={variant.imageUrl} alt="" className="w-full h-full object-cover rounded-lg border border-gray-200" />
+                                                                                <button onClick={() => handleVariantChange(i, 'imageUrl', '')}
+                                                                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">×</button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <input type="file" accept="image/*" className="hidden"
+                                                                                    ref={el => variantFileRefs.current[i] = el}
+                                                                                    onChange={e => handleVariantImage(e, i)} />
+                                                                                <button onClick={() => variantFileRefs.current[i]?.click()}
+                                                                                    className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[#143D59] transition-all">
+                                                                                    <Upload size={12} /> Add
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                    </td>
                                                                 </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-gray-100">
-                                                                {form.variants.map((variant, i) => (
-                                                                    <tr key={i} className="hover:bg-gray-50">
-                                                                        <td className="px-4 py-3"><span className="text-sm font-semibold text-gray-800">{variant.name}</span></td>
-                                                                        <td className="px-4 py-3">
-                                                                            <input type="number" value={variant.price}
-                                                                                onChange={e => handleVariantChange(i, 'price', e.target.value)}
-                                                                                className="w-24 border border-gray-200 text-gray-900 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm"
-                                                                                placeholder={form.supplier_price || '0'} />
-                                                                        </td>
-                                                                        <td className="px-4 py-3">
-                                                                            <input type="number" value={variant.stock}
-                                                                                onChange={e => handleVariantChange(i, 'stock', e.target.value)}
-                                                                                className="w-20 border border-gray-200 text-gray-900 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[#143D59] text-sm"
-                                                                                placeholder="0" />
-                                                                        </td>
-                                                                        <td className="px-4 py-3">
-                                                                            {variant.imageUrl ? (
-                                                                                <div className="relative w-10 h-10">
-                                                                                    <img src={variant.imageUrl} alt="" className="w-full h-full object-cover rounded-lg border border-gray-200" />
-                                                                                    <button onClick={() => handleVariantChange(i, 'imageUrl', '')}
-                                                                                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">×</button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <input type="file" accept="image/*" className="hidden"
-                                                                                        ref={el => variantFileRefs.current[i] = el}
-                                                                                        onChange={e => handleVariantImage(e, i)} />
-                                                                                    <button onClick={() => variantFileRefs.current[i]?.click()}
-                                                                                        className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[#143D59] transition-all">
-                                                                                        <Upload size={12} /> Add
-                                                                                    </button>
-                                                                                </>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             )}
                                         </div>
@@ -691,7 +590,7 @@ export default function SupplierProducts() {
                                 </div>
                             </div>
 
-                            {/* 5. DIMENSIONS */}
+                            {/* Dimensions */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Dimensions & Shipping</h4>
                                 <div className="space-y-4">
@@ -700,7 +599,7 @@ export default function SupplierProducts() {
                                         <input name="weight_grams" type="number" value={form.weight_grams} onChange={handleChange}
                                             className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59]"
                                             placeholder="200" />
-                                        <p className="text-xs text-gray-400 mt-1">Under 500g = ₹82.50 shipping · Over 500g = ₹110 shipping</p>
+                                        <p className="text-xs text-gray-400 mt-1">Under 500g = ₹82.50 · Over 500g = ₹110</p>
                                     </div>
                                     <div>
                                         <label className="text-gray-700 text-sm font-medium mb-2 block">Package Dimensions (cm)</label>
@@ -718,7 +617,7 @@ export default function SupplierProducts() {
                                 </div>
                             </div>
 
-                            {/* 6. DESCRIPTION */}
+                            {/* Description */}
                             <div>
                                 <h4 className="font-bold text-[#143D59] text-base mb-4 pb-2 border-b border-gray-100">Description & Details</h4>
                                 <div className="space-y-5">
@@ -736,11 +635,10 @@ export default function SupplierProducts() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-gray-700 text-sm font-medium mb-1 block">Product Details (Long Description)</label>
+                                        <label className="text-gray-700 text-sm font-medium mb-1 block">Product Details</label>
                                         <textarea name="long_description" value={form.long_description} onChange={handleChange} rows={6}
                                             className="w-full border border-gray-300 text-gray-900 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#143D59] text-sm"
-                                            placeholder="Add detailed product description, specifications, usage instructions..." />
-                                        <p className="text-xs text-gray-400 mt-1">You can use HTML for rich formatting</p>
+                                            placeholder="Add detailed product description..." />
                                     </div>
                                     <div>
                                         <label className="text-gray-700 text-sm font-medium mb-1 block">What's Included</label>
@@ -751,7 +649,6 @@ export default function SupplierProducts() {
                                 </div>
                             </div>
 
-                            {/* Save */}
                             <div className="flex gap-3 pt-4 border-t border-gray-100">
                                 <button onClick={() => setShowModal(false)}
                                     className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all">

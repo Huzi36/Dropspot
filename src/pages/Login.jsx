@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate, Link } from 'react-router-dom'
 
 export default function Login() {
-    const { signIn } = useAuth()
+    const { signIn, getDashboardRoute } = useAuth()
     const navigate = useNavigate()
     const [form, setForm] = useState({ email: '', password: '' })
     const [loading, setLoading] = useState(false)
@@ -19,7 +19,7 @@ export default function Login() {
         setError('')
         try {
             await signIn(form.email, form.password)
-            navigate('/seller/dashboard')
+            navigate('/dashboard')
         } catch (err) {
             setError(err.message)
         } finally {
@@ -71,7 +71,7 @@ export default function Login() {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-4">
                         <div>
                             <label className="text-gray-700 text-sm font-medium mb-1 block">Email</label>
                             <input name="email" type="email" required value={form.email} onChange={handleChange}
@@ -86,11 +86,11 @@ export default function Login() {
                                 placeholder="Your password" />
                         </div>
 
-                        <button type="submit" disabled={loading}
+                        <button onClick={handleSubmit} disabled={loading}
                             className="w-full bg-[#F5B41A] hover:bg-[#e0a218] text-[#143D59] font-bold py-3 rounded-lg transition-all mt-2 disabled:opacity-50">
                             {loading ? 'Logging in...' : 'Log In'}
                         </button>
-                    </form>
+                    </div>
 
                     <p className="text-gray-500 text-sm text-center mt-6">
                         Don't have an account?{' '}
@@ -99,7 +99,7 @@ export default function Login() {
 
                     <p className="text-gray-400 text-xs text-center mt-3">
                         Are you a supplier?{' '}
-                        <a href="/seller-console" className="text-[#143D59] hover:underline">Go to Supplier Console →</a>
+                        <a href="/supplier-console" className="text-[#143D59] hover:underline">Go to Supplier Console →</a>
                     </p>
                 </div>
             </div>

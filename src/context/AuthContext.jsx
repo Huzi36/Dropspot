@@ -38,18 +38,14 @@ export function AuthProvider({ children }) {
         const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
 
-        await supabase.from('profiles').insert({
+        const { error: profileError } = await supabase.from('profiles').insert({
             id: data.user.id,
             full_name: fullName,
+            email,
             phone,
             role
         })
-
-        if (role === 'seller') {
-            await supabase.from('seller_profiles').insert({ user_id: data.user.id })
-        } else if (role === 'supplier') {
-            await supabase.from('supplier_profiles').insert({ user_id: data.user.id })
-        }
+        if (profileError) throw profileError
 
         return data
     }
@@ -61,11 +57,23 @@ export function AuthProvider({ children }) {
     }
 
     async function signOut() {
-        await supabase.auth.signOut()
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
+    }
+
+    // Redirect based on role after login
+    function getDashboardRoute(role) {
+        switch (role) {
+            case 'reseller': return '/seller/dashboard'
+            case 'influencer': return '/influencer/dashboard'
+            case 'supplier': return '/supplier/dashboard'
+            case 'customer': return '/home'
+            default: return '/home'
+        }
     }
 
     return (
-        <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut }}>
+        <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, getDashboardRoute }}>
             {children}
         </AuthContext.Provider>
     )

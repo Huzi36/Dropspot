@@ -17,6 +17,18 @@ const TABS = [
     { key: 'ready_for_pickup', label: 'Ready for Pickup' },
 ]
 
+const nextStatus = {
+    pending: 'confirmed',
+    confirmed: 'packed',
+    packed: 'ready_for_pickup',
+}
+
+const nextStatusLabel = {
+    pending: 'Confirm Order',
+    confirmed: 'Mark as Packed',
+    packed: 'Ready for Pickup',
+}
+
 export default function SupplierOrders() {
     const { profile } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -29,20 +41,12 @@ export default function SupplierOrders() {
 
     async function fetchData() {
         try {
-            const { data: sp } = await supabase
-                .from('supplier_profiles')
-                .select('id')
-                .eq('user_id', profile?.id)
-                .single()
-
-            if (sp) {
-                const { data } = await supabase
-                    .from('order_items')
-                    .select('*, products(name, images), orders(customer_name, customer_phone, customer_address, customer_city, customer_pincode, order_status, created_at)')
-                    .eq('supplier_id', sp.id)
-                    .order('created_at', { ascending: false })
-                setOrders(data || [])
-            }
+            const { data } = await supabase
+                .from('order_items')
+                .select('*, products(name, images), orders(customer_name, customer_phone, customer_address, customer_city, customer_pincode, order_status, created_at)')
+                .eq('supplier_id', profile?.id)
+                .order('created_at', { ascending: false })
+            setOrders(data || [])
         } finally {
             setLoading(false)
         }
@@ -62,18 +66,6 @@ export default function SupplierOrders() {
     }
 
     const filtered = orders.filter(o => o.supplier_status === activeTab)
-
-    const nextStatus = {
-        pending: 'confirmed',
-        confirmed: 'packed',
-        packed: 'ready_for_pickup',
-    }
-
-    const nextStatusLabel = {
-        pending: 'Confirm Order',
-        confirmed: 'Mark as Packed',
-        packed: 'Ready for Pickup',
-    }
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -102,7 +94,6 @@ export default function SupplierOrders() {
                     ))}
                 </div>
 
-                {/* Orders */}
                 {loading ? (
                     <div className="space-y-4">
                         {[...Array(3)].map((_, i) => (
@@ -115,7 +106,7 @@ export default function SupplierOrders() {
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
                         <p className="text-5xl mb-4">📭</p>
-                        <p className="text-gray-500 font-medium">No {activeTab} orders</p>
+                        <p className="text-gray-500 font-medium">No {activeTab.replace('_', ' ')} orders</p>
                         <p className="text-gray-400 text-sm mt-1">Orders will appear here as they come in</p>
                     </div>
                 ) : (
@@ -169,7 +160,6 @@ export default function SupplierOrders() {
                                     </div>
                                 </div>
 
-                                {/* Action Button */}
                                 {nextStatus[item.supplier_status] && (
                                     <button
                                         onClick={() => updateStatus(item.id, nextStatus[item.supplier_status])}
@@ -181,7 +171,7 @@ export default function SupplierOrders() {
 
                                 {item.supplier_status === 'ready_for_pickup' && (
                                     <div className="w-full bg-green-50 border border-green-200 text-green-700 font-bold py-2.5 rounded-xl text-center text-sm">
-                                        ✅ Ready — Awaiting Shiprocket Pickup
+                                        ✅ Ready — Awaiting Pickup
                                     </div>
                                 )}
                             </div>
