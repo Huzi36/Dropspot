@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabase'
 import {
     LayoutDashboard,
     Package,
@@ -13,19 +15,50 @@ import {
     ChevronRight,
 } from 'lucide-react'
 
-const NAV = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/seller-console/dashboard' },
-    { icon: Package, label: 'My Products', path: '/seller-console/products' },
-    { icon: ShoppingCart, label: 'Orders', path: '/seller-console/orders' },
-    { icon: Truck, label: 'Shipping', path: '/seller-console/shipping' },
-    { icon: MessageCircle, label: 'Q&A', path: '/seller-console/qa' },
-    { icon: User, label: 'Account', path: '/seller-console/account' },
-    { icon: Settings, label: 'Settings', path: '/seller-console/settings' },
-]
-
 export default function SupplierSidebar({ open, setOpen }) {
     const { profile, signOut } = useAuth()
     const location = useLocation()
+    const [unansweredCount, setUnansweredCount] = useState(0)
+
+    useEffect(() => { fetchUnanswered() }, [profile])
+
+    async function fetchUnanswered() {
+        if (!profile?.id) return
+        try {
+            const { data: sp } = await supabase
+                .from('supplier_profiles')
+                .select('id')
+                .eq('user_id', profile.id)
+                .single()
+
+            if (sp) {
+                const { data: products } = await supabase
+                    .from('products')
+                    .select('id')
+                    .eq('supplier_id', sp.id)
+
+                if (products?.length > 0) {
+                    const productIds = products.map(p => p.id)
+                    const { count } = await supabase
+                        .from('product_questions')
+                        .select('id', { count: 'exact', head: true })
+                        .in('product_id', productIds)
+                        .is('answer', null)
+                    setUnansweredCount(count || 0)
+                }
+            }
+        } catch (e) { }
+    }
+
+    const NAV = [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/seller-console/dashboard' },
+        { icon: Package, label: 'My Products', path: '/seller-console/products' },
+        { icon: ShoppingCart, label: 'Orders', path: '/seller-console/orders' },
+        { icon: Truck, label: 'Shipping', path: '/seller-console/shipping' },
+        { icon: MessageCircle, label: 'Q&A', path: '/seller-console/qa', badge: unansweredCount },
+        { icon: User, label: 'Account', path: '/seller-console/account' },
+        { icon: Settings, label: 'Settings', path: '/seller-console/settings' },
+    ]
 
     return (
         <aside className={`${open ? 'w-64' : 'w-20'} transition-all duration-300 bg-[#143D59] min-h-screen flex flex-col fixed top-0 left-0 z-10`}>
@@ -56,8 +89,24 @@ export default function SupplierSidebar({ open, setOpen }) {
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${active
                                 ? 'bg-white/15 text-white'
                                 : 'text-white/50 hover:text-white hover:bg-white/10'}`}>
-                            <Icon size={18} strokeWidth={active ? 2 : 1.5} className="flex-shrink-0" />
-                            {open && <span className={`text-sm ${active ? 'font-semibold' : 'font-normal'}`}>{item.label}</span>}
+                            <div className="relative flex-shrink-0">
+                                <Icon size={18} strokeWidth={active ? 2 : 1.5} />
+                                {item.badge > 0 && !open && (
+                                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                                        {item.badge > 9 ? '9+' : item.badge}
+                                    </span>
+                                )}
+                            </div>
+                            {open && (
+                                <span className={`text-sm flex-1 ${active ? 'font-semibold' : 'font-normal'}`}>
+                                    {item.label}
+                                </span>
+                            )}
+                            {open && item.badge > 0 && (
+                                <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                    {item.badge > 9 ? '9+' : item.badge}
+                                </span>
+                            )}
                         </Link>
                     )
                 })}

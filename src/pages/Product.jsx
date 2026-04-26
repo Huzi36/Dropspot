@@ -233,13 +233,13 @@ export default function Product() {
                                 {images.map((img, i) => (
                                     <button key={i} onClick={() => setSelectedImage(i)}
                                         className={`w-14 h-14 border-2 overflow-hidden flex-shrink-0 transition-all ${selectedImage === i ? 'border-[#143D59]' : 'border-gray-200 hover:border-gray-300'}`}>
-                                        {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100" />}
+                                        {img ? <img src={img} alt="" className="w-full h-full object-contain p-1" /> : <div className="w-full h-full bg-gray-100" />}
                                     </button>
                                 ))}
                             </div>
                             <div className="flex-1 relative bg-gray-50 overflow-hidden" style={{ aspectRatio: '1', maxHeight: '500px' }}>
                                 {images[selectedImage]
-                                    ? <img src={images[selectedImage]} alt={product.name} className="w-full h-full object-cover" />
+                                    ? <img src={images[selectedImage]} alt={product.name} className="w-full h-full object-contain p-4" />
                                     : <div className="w-full h-full flex items-center justify-center text-gray-200 text-8xl">📦</div>}
                                 <button onClick={() => setWishlisted(!wishlisted)}
                                     className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -387,7 +387,6 @@ export default function Product() {
                                 </button>
                                 {openSections.includes('reviews') && (
                                     <div className="pb-6">
-                                        {/* Rating Summary */}
                                         <div className="flex items-start gap-6 mb-6">
                                             <div>
                                                 <p className="text-5xl font-black text-[#143D59]">0.0</p>
@@ -408,11 +407,8 @@ export default function Product() {
                                                 ))}
                                             </div>
                                         </div>
-
                                         <p className="text-sm font-semibold text-gray-700 mb-1">0 Review For This Product</p>
                                         <p className="text-sm text-gray-400 mb-6">There are no reviews for this product yet.</p>
-
-                                        {/* Add A Review */}
                                         {reviewSubmitted ? (
                                             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                                                 <p className="text-green-700 font-medium text-sm">✅ Review submitted! Thank you.</p>
@@ -426,10 +422,8 @@ export default function Product() {
                                                         <label className="text-xs font-medium text-gray-600 mb-2 block">Your rating of this product</label>
                                                         <div className="flex items-center gap-1">
                                                             {[1, 2, 3, 4, 5].map(star => (
-                                                                <button key={star}
-                                                                    onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}>
-                                                                    <Star size={22}
-                                                                        className={reviewForm.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
+                                                                <button key={star} onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}>
+                                                                    <Star size={22} className={reviewForm.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -620,7 +614,7 @@ export default function Product() {
                                         className="border border-gray-100 cursor-pointer hover:shadow-sm transition-all group">
                                         <div className="h-44 bg-gray-50 overflow-hidden">
                                             {p.images?.[0]
-                                                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain p-2" />
                                                 : <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl">📦</div>}
                                         </div>
                                         <div className="p-3">
@@ -653,7 +647,7 @@ export default function Product() {
                                         className="border border-gray-100 cursor-pointer hover:shadow-sm transition-all group">
                                         <div className="h-44 bg-gray-50 overflow-hidden">
                                             {p.images?.[0]
-                                                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain p-2" />
                                                 : <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl">📦</div>}
                                         </div>
                                         <div className="p-3">
